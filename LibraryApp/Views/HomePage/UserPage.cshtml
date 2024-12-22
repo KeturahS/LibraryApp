@@ -1,6 +1,61 @@
 ﻿
-<link href="~/css/mystyle.css" rel="stylesheet" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container py-5">
+
+        <!-- Header Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary">Welcome <strong>@ViewBag.UserName</strong> to eBook</h1>
+          
+
+
+        </div>
+
+
+        <!-- Search Section -->
+        <div class="mb-4">
+            <input type="text" class="form-control" placeholder="Search for eBook..." id="bookSearch">
+        </div>
+
+        <!-- Book Selection, Borrowing, and Buying -->
+        <div class="row mb-4">
+            <div class="col-12 col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header text-white bg-primary">
+                        <h5 class="card-title mb-0">Choose a Book</h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="text" class="form-control mb-2" placeholder="Book Title">
+                        <input type="text" class="form-control mb-2" placeholder="Author">
+                        <input type="text" class="form-control mb-2" placeholder="Publisher">
+                        <button class="btn btn-success w-100">Choose</button>
+                    </div>
+                </div>
+            </div>
+
+          
+        <!-- Payment Section -->
+        <div class="card mb-4">
+            <div class="card-header text-white bg-dark">
+                <h5 class="card-title mb-0">Make Payment</h5>
+            </div>
+            <div class="card-body">
+                <input type="text" class="form-control mb-2" placeholder="Credit Card Number">
+                <button class="btn btn-success w-100">Pay</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 
 
 
-<h1>HI, WELCOME</h1>
