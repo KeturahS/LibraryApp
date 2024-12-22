@@ -1,0 +1,32 @@
+﻿@model LibraryApp.Models.LogInModel
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+
+	<form action="Login" method="post" class="w-50">
+
+
+		<div class="mb-3">
+
+		<label for="inputEmail" class="form-label">Enter email address:</label>
+		<input name="email" type="email" class="form-control" id="inputEmail" value="@Model.email" />
+		@Html.ValidationMessageFor(x => x.email) <br />
+	</div>
+
+		<div class="mb-3">
+
+		<label for="inputPassword" class="form-label">Enter Password:</label>
+		<input name="Password" type="password" class="form-control" id="inputPassword" value="@Model.Password" />
+		@Html.ValidationMessageFor(x => x.Password) <br />
+	</div>
+
+
+
+		<div class="mb-3">
+		<button type="submit" class="btn btn-primary">Sign in</button>
+	</div>
+
+
+
+</form>
+
+</div>

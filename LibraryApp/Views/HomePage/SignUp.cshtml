@@ -1,0 +1,45 @@
+﻿@model LibraryApp.Models.User
+
+
+<div class="container d-flex justify-content-center align-items-start vh-100 pt-3">
+
+	<form action="SubmitUser" method="post" class="w-100 p-2 bg-light rounded shadow-sm" style="max-width: 400px;">
+		<h1 class="text-center mb-1 text-primary">Registration</h1>
+
+		<div class="mb-1">
+			<label for="FirstName" class="form-label">Enter first name:</label>
+			<input type="text" id="FirstName" name="FirstName" value="@Model.FirstName"
+				   class="form-control form-control-sm" placeholder="First Name" aria-label="First Name" /> @Html.ValidationMessageFor(x => x.FirstName)<br />
+	</div>
+
+		<div class="mb-1">
+			<label for="LastName" class="form-label">Enter last name:</label>
+			<input type="text" id="LastName" name="LastName" value="@Model.LastName"
+				   class="form-control form-control-sm" placeholder="Last Name" aria-label="Last Name" />   @Html.ValidationMessageFor(x => x.LastName)  <br />
+	</div>
+
+		<div class="mb-1">
+			<label for="email" class="form-label">Enter email address:</label>
+			<input type="email" id="email" name="email" value="@Model.email"
+				   class="form-control form-control-sm" placeholder="Email Address" aria-label="Email Address" />    @Html.ValidationMessageFor(x => x.email) <br />
+	</div>
+
+		<div class="mb-1">
+			<label for="ID" class="form-label">Enter ID:</label>
+			<input type="text" id="ID" name="ID" value="@Model.ID"
+				   class="form-control form-control-sm" placeholder="Your ID" aria-label="ID" />    @Html.ValidationMessageFor(x => x.ID) <br />
+	</div>
+
+		<div class="mb-1">
+			<label for="Password" class="form-label">Enter Password:</label>
+			<input type="password" id="Password" name="Password" value="@Model.Password"
+				   class="form-control form-control-sm" placeholder="Password" aria-label="Password" />    @Html.ValidationMessageFor(x => x.Password) <br />
+	</div>
+
+		<div class="d-grid">
+			<button type="submit" id="Submit1" class="btn btn-primary btn-sm">Sign up</button>
+		</div>
+
+
+</form>
+</div>
