@@ -33,7 +33,9 @@
 		<div class="mb-1">
 			<label for="Password" class="form-label">Enter Password:</label>
 			<input type="password" id="Password" name="Password" value="@Model.Password"
-				   class="form-control form-control-sm" placeholder="Password" aria-label="Password" />    @Html.ValidationMessageFor(x => x.Password) <br />
+				   class="form-control form-control-sm" placeholder="Password" aria-label="Password" />   
+				   @Html.PasswordFor(x => x.Password)
+			@Html.ValidationMessageFor(x => x.Password)<br /> <br />
 	</div>
 
 		<div class="d-grid">

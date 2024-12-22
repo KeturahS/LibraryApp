@@ -22,8 +22,8 @@ namespace LibraryApp.Models
 		public string ID { get; set; }
 
 		[Required]
-		
-		public string Password { get; set; }
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$", ErrorMessage = "Password must be at least 8 characters long, with at least one uppercase letter, one lowercase letter, and one special character")]
+        public string Password { get; set; }
 
 
 
