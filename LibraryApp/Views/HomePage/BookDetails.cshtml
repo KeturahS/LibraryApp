@@ -1,0 +1,33 @@
+﻿@model Book
+
+<div class="container py-5">
+    <h1 class="text-primary">@Model.Title</h1>
+    <div class="row">
+        <div class="col-md-4">
+            <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid" />
+        </div>
+        <div class="col-md-8">
+            <p><strong>Author:</strong> @Model.Author</p>
+            <p><strong>Publisher:</strong> @Model.Publisher</p>
+            <p><strong>Borrow Price:</strong> $@Model.BorrowPrice</p>
+            <p><strong>Buy Price:</strong> $@Model.BuyPrice</p>
+            <p><strong>Available Copies:</strong> @Model.AvailableCopies</p>
+
+            <!-- Options to Buy, Borrow, or Rent -->
+            <div class="mt-4">
+                <form method="post" action="/HomePage/PurchaseBook">
+                    <input type="hidden" name="bookId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-success">Buy</button>
+                </form>
+                <form method="post" action="/HomePage/RentBook">
+                    <input type="hidden" name="bookId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-warning">Rent</button>
+                </form>
+                <form method="post" action="/HomePage/BorrowBook">
+                    <input type="hidden" name="bookId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-primary">Borrow</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

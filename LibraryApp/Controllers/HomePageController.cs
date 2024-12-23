@@ -20,13 +20,6 @@ namespace LibraryApp.Controllers
 
 		}
 
-
-
-
-		
-
-
-
 		public IActionResult HomePage()
 		{
 			
@@ -45,19 +38,6 @@ namespace LibraryApp.Controllers
 
 		public IActionResult SubmitUser(User user)
 		{
-			//if (ModelState.IsValid)
-			//{
-
-			//	return View("HomePage",user);
-			//}
-
-			//else
-			//{
-			//	return View("SignUp", user);
-			//}
-
-
-
 			if (ModelState.IsValid)
 			{
 				using (Microsoft.Data.SqlClient.SqlConnection connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
@@ -110,64 +90,62 @@ namespace LibraryApp.Controllers
 
 
 
-		[HttpPost]
-		public IActionResult Login(LogInModel model)
-		{
-			if (ModelState.IsValid)
-			{
-				if (IsUserValid(model.email, model.Password))
-				{
+        [HttpPost]
+        public IActionResult Login(LogInModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                if (IsUserValid(model.email, model.Password))
+                {
+                    // יצירת אובייקט ספרים
+                    List<Book> books = new List<Book>();
 
-                    User user = new User();
-
-                    using (Microsoft.Data.SqlClient.SqlConnection connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
+                    using (SqlConnection connection = new SqlConnection(connectionString))
                     {
                         connection.Open();
+                        string query = "SELECT * FROM Books"; // שינוי שם הטבלה אם יש צורך
 
-                        string sqlQuery = "SELECT FirstName FROM Users_tbl WHERE email = @Email";
-
-                        using (Microsoft.Data.SqlClient.SqlCommand command = new Microsoft.Data.SqlClient.SqlCommand(sqlQuery, connection))
+                        using (SqlCommand command = new SqlCommand(query, connection))
                         {
-
-                            command.Parameters.AddWithValue("@Email", model.email);
-
-                            SqlDataReader reader = command.ExecuteReader();
-
-                            while (reader.Read())
+                            using (SqlDataReader reader = command.ExecuteReader())
                             {
-                                user.FirstName = reader.GetString(0);
-                               
+                                while (reader.Read())
+                                {
+                                    books.Add(new Book
+                                    {
+                                        Id = reader.GetInt32(0), // Id
+                                        Title = reader.GetString(1), // Title
+                                        Author = reader.GetString(2), // Author
+                                        Publisher = reader.GetString(3), // Publisher
+                                        BorrowPrice = reader.GetDecimal(4), // BorrowPrice
+                                        BuyPrice = reader.GetDecimal(5), // BuyPrice
+                                        AvailableCopies = reader.GetInt32(6), // AvailableCopies
+                                        ImageUrl = reader.GetString(7) // ImageUrl
+                                    });
+                                }
                             }
-
-                            reader.Close();
                         }
-
                         connection.Close();
                     }
 
-
-
+                    // שמירת המשתמש כמשתמש מחובר
                     HttpContext.Session.SetString("CurrentUser", model.email);
-					var sessionValue = HttpContext.Session.GetString("CurrentUser");
-					ViewBag.sessionValue=sessionValue;
-					ViewBag.UserName = user.FirstName;
-					// משתמש נמצא - המשך לפעולה הבאה
-					return View("UserPage");
+
+                    // שליחת הספרים לתצוגה
+                    return View("UserPageUpdated", books);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                }
+            }
+
+            return View("SignIn", model);
+        }
 
 
-				}
-				else
-				{
-					// משתמש לא נמצא
-					ModelState.AddModelError(string.Empty, "Invalid email or password.");
-				}
-			}
 
-			return View("SignIn", model);
-		}
-
-
-		private bool IsUserValid(string email, string password)
+        private bool IsUserValid(string email, string password)
 		{
 			bool isValid = false;
 
@@ -197,25 +175,52 @@ namespace LibraryApp.Controllers
 		public IActionResult UserPage()
 		{
 
-
-
-
-
 			return View();
 
 		}
 
 
+        public IActionResult BookDetails(int id)
+        {
+            Book book = null;
 
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT * FROM Books WHERE Id = @BookId";
 
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@BookId", id);
 
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            book = new Book
+                            {
+                                Id = reader.GetInt32(0),
+                                Title = reader.GetString(1),
+                                Author = reader.GetString(2),
+                                Publisher = reader.GetString(3),
+                                BorrowPrice = reader.GetDecimal(4),
+                                BuyPrice = reader.GetDecimal(5),
+                                AvailableCopies = reader.GetInt32(6),
+                                ImageUrl = reader.GetString(7)
+                            };
+                        }
+                    }
+                }
+                connection.Close();
+            }
 
+            if (book == null)
+            {
+                return NotFound(); // אם הספר לא נמצא
+            }
 
+            return View(book);
+        }
 
-
-
-
-
-
-	}
+    }
 }
