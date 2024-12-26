@@ -5,6 +5,10 @@ using LibraryApp.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System.Reflection.Metadata.Ecma335;
+using System.Data;
+using LibraryApp.Models.ViewModel;
+
+
 
 namespace LibraryApp.Controllers
 {
@@ -39,27 +43,43 @@ namespace LibraryApp.Controllers
 		public IActionResult SubmitUser(User user)
 		{
 			if (ModelState.IsValid)
-			{
-				using (Microsoft.Data.SqlClient.SqlConnection connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
+			{              
+
+                using (Microsoft.Data.SqlClient.SqlConnection connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
 				{
 					connection.Open();
 
-					string sqlQuery = "INSERT INTO Users_tbl VALUES (@Value1, @Value2, @Value3, @Value4)";
+					string sqlQuery = "INSERT INTO Users_tbl VALUES (@Value1, @Value2, @Value3, @Value4, @Value5)";
 
 					using (Microsoft.Data.SqlClient.SqlCommand command = new Microsoft.Data.SqlClient.SqlCommand(sqlQuery, connection))
 					{
-						// Set the parameter values
-						command.Parameters.AddWithValue("@Value1", user.FirstName);
-						command.Parameters.AddWithValue("@Value2", user.LastName);
-						command.Parameters.AddWithValue("@Value3", user.email);
-						command.Parameters.AddWithValue("@Value4", user.Password);
+
+
+                        if (user.Status == "Admin")
+                        {
+                            // Save the admin request as "PendingApproval"
+                            user.Status = "PendingAdminApproval";
+                        }
+                        // Set the parameter values
+                        command.Parameters.AddWithValue("@Value1", user.Status);
+                        command.Parameters.AddWithValue("@Value2", user.FirstName);
+						command.Parameters.AddWithValue("@Value3", user.LastName);
+						command.Parameters.AddWithValue("@Value4", user.email);
+						command.Parameters.AddWithValue("@Value5", user.Password);
 
 						int rowsAffected = command.ExecuteNonQuery();
 						Console.WriteLine($"Rows affected: {rowsAffected}");
 
 						if (rowsAffected > 0)
 						{
-							return View("HomePage", user);
+                            if (user.Status == "PendingAdminApproval")
+                            {
+                                return View("HomePage");
+                             
+                            }
+
+
+                            return View("SignIn", user);
 						}
 						else
 						{
@@ -68,7 +88,6 @@ namespace LibraryApp.Controllers
 
 					}
 
-					connection.Close();
 				}
 
 			}
@@ -79,12 +98,17 @@ namespace LibraryApp.Controllers
 		}
 
 
-		public IActionResult SignIn()
+
+        
+
+
+        public IActionResult SignIn()
 		{
 			LogInModel user= new LogInModel();
 
+            TempData["ErrorMessage"] = null;
 
-			return View("SignIn", user);
+            return View("SignIn", user);
 
 		}
 
@@ -95,8 +119,33 @@ namespace LibraryApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (IsUserValid(model.email, model.Password))
+                string status = IsUserValid(model.email, model.Password);
+
+				if (status == "NonExistent")
+				{
+					TempData["ErrorMessage"] = "No account exists with the provided email. Please check your email or sign up for an account.";
+					return View("SignIn", model);
+				}
+
+				if (status == "StillPendingAdminApproval")
+				{
+					TempData["ErrorMessage"] = "Your request to become an admin is still pending approval. You will receive an update via email once it's reviewed.";
+					return View("SignIn",model);
+				}
+
+                if (status == "Admin" )
                 {
+                    HttpContext.Session.SetString("CurrentUser", model.email);
+
+                    return RedirectToAction("ShowPendingAdminRequests", "Admin");
+                }
+
+
+
+                if (status=="User")
+                {
+
+                   
                     // יצירת אובייקט ספרים
                     List<Book> books = new List<Book>();
 
@@ -140,17 +189,18 @@ namespace LibraryApp.Controllers
                 }
             }
 
+            TempData["ErrorMessage"] = null;
+
             return View("SignIn", model);
         }
 
 
 
-        private bool IsUserValid(string email, string password)
+        private string IsUserValid(string email, string password)
 		{
-			bool isValid = false;
-
+		
 			// שאילתה לבדיקת אימייל וסיסמה
-			string query = "SELECT COUNT(*) FROM Users_tbl WHERE email = @email AND Password = @Password";
+			string query = "SELECT Status FROM Users_tbl WHERE email = @email AND Password = @Password ";
 
 			using (SqlConnection connection = new SqlConnection(connectionString))
 			{
@@ -160,13 +210,30 @@ namespace LibraryApp.Controllers
 					command.Parameters.AddWithValue("@email", email);
 					command.Parameters.AddWithValue("@Password", password);
 
+
 					connection.Open();
-					int count = (int)command.ExecuteScalar();
-					isValid = count > 0;
+
+					using (SqlDataReader reader = command.ExecuteReader())
+					{
+						if (reader.Read())
+						{
+							string status = reader["Status"].ToString(); 
+							if (status == "PendingAdminApproval")
+								return "StillPendingAdminApproval";
+
+                            if (status == "SuperAdmin" || status == "Admin")
+                                return "Admin";
+
+                            return "User";
+						}
+
+                       
+					}
+                    				    
 				}
 			}
 
-			return isValid;
+			return "NonExistent";
 		}
 
 

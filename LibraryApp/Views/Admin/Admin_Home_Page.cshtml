@@ -1,0 +1,58 @@
+﻿@model LibraryApp.Models.ViewModel.RequestedToBeAdminModel
+
+<div class="container mt-5 d-flex justify-content-center align-items-center" style="height: 20vh;">
+    <div class="text-center" style="width: 70%; background-color: #f8f9fa; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
+        <h3 class="display-4 text-primary mb-4">Welcome to the Admin Dashboard</h3>
+        <!-- Scrolling Text -->
+        <marquee behavior="scroll" direction="left" style="font-size: 1.2rem;">
+            Manage book formats, prices, availability, and user registrations with ease!
+            <span class="font-weight-bold text-success">Set discounts</span>,
+            <span class="font-weight-bold text-warning">manage borrow lists</span>,
+            and keep the catalog fresh and up-to-date – all from one place.
+        </marquee>
+    </div>
+</div>
+
+
+
+<div class="container mt-5">
+    <div class="row">
+        <!-- Left-Side Pending Admin Requests -->
+        <div class="col-md-6">
+            <h3 class="text-center">Pending Admin Requests</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>@user.FirstName</td>
+                            <td>@user.LastName</td>
+                            <td>@user.email</td>
+                            <td>@user.Status</td>
+                            <td>
+                                <form action="/Admin/ApproveReject" method="post" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.email" />
+                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Right-Side Placeholder or Empty Space -->
+        <div class="col-md-6">
+            <!-- Add content or keep this empty for alignment -->
+        </div>
+    </div>
+</div>
