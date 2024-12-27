@@ -137,7 +137,7 @@ namespace LibraryApp.Controllers
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
 
-                    return RedirectToAction("ShowPendingAdminRequests", "Admin");
+                    return RedirectToAction("ShowAdminPage", "Admin");
                 }
 
 

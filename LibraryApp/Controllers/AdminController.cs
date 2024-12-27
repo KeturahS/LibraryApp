@@ -3,6 +3,7 @@ using LibraryApp.Models.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
 using static LibraryApp.Models.ConnectionToDBmodel;
 
 namespace LibraryApp.Controllers
@@ -21,21 +22,25 @@ namespace LibraryApp.Controllers
         }
 
 
-        public IActionResult ShowPendingAdminRequests()
+        public IActionResult ShowAdminPage()
         {
 
-            RequestedToBeAdminModel requestedToBeAdminModel = new RequestedToBeAdminModel();
-            requestedToBeAdminModel.Users = new List<User>();
-            requestedToBeAdminModel.Users = GetPendingAdminRequests();
+            AdminViewModel AdminPageModel = new AdminViewModel();
+            AdminPageModel.AdminUserRequests = new List<User>();
+            AdminPageModel.AdminUserRequests = GetPendingAdminRequests();
+            AdminPageModel.AllUsers = new List<User>();
+            AdminPageModel.AllUsers = GetAllUsers();
+            AdminPageModel.NewUser= new User(); 
 
-            return View("Admin_Home_Page", requestedToBeAdminModel);
+
+            return View("Admin_Home_Page", AdminPageModel);
         }
 
 
 
         public List<User> GetPendingAdminRequests()
         {
-         
+
             List<User> PendingAdminRequests = new List<User>();
 
             string query = "SELECT * FROM Users_tbl WHERE Status = 'PendingAdminApproval'"; // Simple SQL query
@@ -51,13 +56,13 @@ namespace LibraryApp.Controllers
                         {
                             var user = new User
                             {
-								FirstName = reader.GetString(1),
-								LastName = reader.GetString(2),
-								email = reader.GetString(3),
+                                FirstName = reader.GetString(1),
+                                LastName = reader.GetString(2),
+                                email = reader.GetString(3),
                                 // Add other fields as necessary
                             };
 
-							PendingAdminRequests.Add(user);
+                            PendingAdminRequests.Add(user);
                         }
                     }
                 }
@@ -68,7 +73,7 @@ namespace LibraryApp.Controllers
 
 
         [HttpPost]
-        public IActionResult ApproveReject(string userId, string action)
+        public IActionResult ApproveRejectDeleteAdd(string userId, string action)
         {
             if (action == "approve")
             {
@@ -87,7 +92,8 @@ namespace LibraryApp.Controllers
 
 
             }
-            else if (action == "reject")
+            
+            if (action == "reject")
             {
                 var updateQuery = "UPDATE Users_tbl SET Status = @NewStatus WHERE email = @Email";
 
@@ -102,7 +108,74 @@ namespace LibraryApp.Controllers
 
             }
 
-            return View("Admin_Home_Page");
+
+            if (action == "Delete")
+            {
+                var updateQuery = "DELETE FROM Users_tbl WHERE email = @Email";
+
+                var parameters = new Dictionary<string, object>{
+                        { "@Email", userId }};
+
+                // Execute the update using ExecuteQuery
+                ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+                connection.ExecuteQuery<int>(updateQuery, parameters);
+
+
+            }
+
+
+
+
+       
+
+
+            return RedirectToAction("ShowAdminPage");
+        }
+
+
+        public IActionResult AddUser()
+        {
+
+         
+          
+
+           return View();
+        }
+
+
+
+
+
+
+
+        public List<User> GetAllUsers()
+        {
+            // SQL query to get all users except the current one
+            var updateQuery = "SELECT * FROM Users_tbl WHERE email <> @CurrentUser";
+
+            // Set up the parameters
+            var parameters = new Dictionary<string, object>
+    {
+        { "@CurrentUser", HttpContext.Session.GetString("CurrentUser") }
+    };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            // Execute the query and map the results to a list of User objects
+            return connection.ExecuteQuery<User>(
+                updateQuery,
+                parameters,
+                reader => new User
+                {
+                    Status = reader.GetString(reader.GetOrdinal("Status")),
+                    FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                    LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                    email = reader.GetString(reader.GetOrdinal("email")),
+                    Password = reader.GetString(reader.GetOrdinal("Password"))
+                }
+            );
+
         }
 
 
