@@ -13,21 +13,27 @@
             <p><strong>Buy Price:</strong> $@Model.BuyPrice</p>
             <p><strong>Available Copies:</strong> @Model.AvailableCopies</p>
 
-            <!-- Options to Buy, Borrow, or Rent -->
+            <!-- Options to Buy or Borrow -->
             <div class="mt-4">
-                <form method="post" action="/HomePage/PurchaseBook">
+                <form method="post" action="/Cart/AddToCart">
                     <input type="hidden" name="bookId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-success">Buy</button>
+                    <button type="submit" class="btn btn-primary">Add to Cart</button>
                 </form>
-                <form method="post" action="/HomePage/RentBook">
-                    <input type="hidden" name="bookId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-warning">Rent</button>
-                </form>
+
                 <form method="post" action="/HomePage/BorrowBook">
                     <input type="hidden" name="bookId" value="@Model.Id" />
                     <button type="submit" class="btn btn-primary">Borrow</button>
                 </form>
             </div>
         </div>
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+
     </div>
 </div>
