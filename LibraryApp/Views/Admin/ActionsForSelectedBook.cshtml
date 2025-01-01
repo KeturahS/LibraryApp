@@ -1,0 +1,296 @@
+﻿@model LibraryApp.Models.Book
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+<div class="container d-flex justify-content-center align-items-center">
+	<div class="col">
+
+			@if (TempData["MESSAGEdelete"] == null)
+		{
+			<div class="card shadow-sm h-100">
+			<!-- התמונה -->
+			<img src="@Model.ImageUrl" class="card-img-top" alt="@Model.BookTitle" style="width: 100%; height: 200px; object-fit: cover;" />
+
+			<div class="card-body text-center">
+				<!-- שם הספר -->
+				<h5 class="card-title">@Model.BookTitle</h5>
+				<!-- פרטי הספר -->
+				<p class="card-text">
+					<strong>Author:</strong> @Model.Author <br />
+					<strong>Publisher:</strong> @Model.Publisher <br />
+					<strong>Borrow Price:</strong> $@Model.PriceForBorrow <br />
+					<strong>Buy Price:</strong> $@Model.PriceForBuy<br />
+					<strong>Sale:</strong> @(@Model.IsOnSale ? "Yes" : "No")<br />
+					@if (Model.IsOnSale)
+							{
+								@if(Model.DISCOUNTEDPriceForBorrow > 0)
+							{<strong>Discounted Borrow Price:</strong> @Model.DISCOUNTEDPriceForBorrow<br />}
+								@if (Model.DISCOUNTEDPriceForBuy > 0)
+							{<strong>Discounted Buy Price:</strong> @Model.DISCOUNTEDPriceForBuy<br />}
+							}
+				</p>
+
+
+
+
+				<form action="UpdateBook" method="POST">
+
+					 <input type="hidden" name="BookTitle" value="@Model.BookTitle" />
+					 <input type="hidden" name="Author" value="@Model.Author" />
+					 <input type="hidden" name="Publisher" value="@Model.Publisher" />
+					<input type="hidden" name="YearOfPublication" value="@Model.YearOfPublication" />
+
+
+					<!-- Row 1 -->
+					<div class="row">
+						<div class="col-md-6">
+							<label for="PriceForBorrow" class="small"> Update Borrowing price: </label>
+									<input type="text" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" value="@Model.PriceForBorrow" onchange="validatePrices()" />
+						</div>
+						<div class="col-md-6">
+							<label for="PriceForBuy" class="small">Update Buying price:</label>
+									<input type="text" id="PriceForBuy" name="PriceForBuy" class="form-control form-control-sm" value="@Model.PriceForBuy" onchange="validatePrices()" />
+						</div>
+								
+										
+						
+						
+						<div class="row mt-3 align-items-center">
+									<div class="col-md-3">
+										<label for="UpdateSale" class="small">Update Sale:</label>
+										<select id="UpdateSale" name="UpdateSale" class="form-control form-control-sm w-100" onchange="DealWitheDiscountFields()">
+											<option value="0">Do Not Update</option>
+											<option value="1">Update</option>
+											</select>
+									</div>
+									
+									
+
+
+								</div>
+
+								<div class="row mt-3 align-items-center">
+
+
+									<div class="col-md-3">
+										<label for="DISCOUNTEDPriceForBorrow" class="small"> Discounted Price for Borrow:</label>
+										@if (@Model.DISCOUNTEDPriceForBorrow > 0)
+										{
+											<input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled value="@Model.DISCOUNTEDPriceForBorrow">
+										}
+										else
+										{
+											<input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled>
+										}
+
+									</div>
+
+									<div class="col-md-3">
+
+										<label for="DISCOUNTEDPriceForBuy" class="small"> Discounted Price for Buy:</label>
+
+										@if (@Model.DISCOUNTEDPriceForBuy > 0)
+										{
+											<input type="number" step="0.01" id="DISCOUNTEDPriceForBuy" name="DISCOUNTEDPriceForBuy" class="form-control form-control-sm" disabled value="@Model.DISCOUNTEDPriceForBuy">
+										}
+
+										else
+										{
+											<input type="number" step="0.01" id="DISCOUNTEDPriceForBuy" name="DISCOUNTEDPriceForBuy" class="form-control form-control-sm" disabled>
+
+										}
+
+									</div>
+
+								</div>
+								
+								
+
+
+								<script>
+									function DealWitheDiscountFields() {
+										const UpdateSale = document.getElementById("UpdateSale").value;
+										const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
+										const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+
+										if (UpdateSale === "1") {
+											discountedBuyField.disabled = false;
+											discountedBorrowField.disabled = false;
+										}
+										if (UpdateSale === "0") 
+										{	discountedBuyField.disabled = true;
+											discountedBorrowField.disabled = true;
+										}
+										if (UpdateSale === "2") {
+											discountedBuyField.disabled = true;
+											discountedBorrowField.disabled = true;
+										}
+
+
+									}
+								</script>
+
+
+
+								<script>
+									function validatePrices() {
+										const priceForBuy = parseFloat(document.getElementById("PriceForBuy").value) || 0;
+										const priceForBorrow = parseFloat(document.getElementById("PriceForBorrow").value) || 0;
+										const discountedPriceForBuy = parseFloat(document.getElementById("DISCOUNTEDPriceForBuy").value) || 0;
+										const discountedPriceForBorrow = parseFloat(document.getElementById("DISCOUNTEDPriceForBorrow").value) || 0;
+
+										const priceForBuyField = document.getElementById("PriceForBuy");
+										const priceForBorrowField = document.getElementById("PriceForBorrow");
+
+										// Validate if the entered Buy price is lower than the discounted price
+										if (priceForBuy < discountedPriceForBuy && priceForBuy > 0) {
+											priceForBuyField.setCustomValidity("Buy price cannot be lower than the discounted price.");
+											priceForBuyField.reportValidity();  // Display validation message
+										} else {
+											priceForBuyField.setCustomValidity("");  // Clear validation message
+										}
+
+										// Validate if the entered Borrow price is lower than the discounted price
+										if (priceForBorrow < discountedPriceForBorrow && priceForBorrow > 0) {
+											priceForBorrowField.setCustomValidity("Borrow price cannot be lower than the discounted price.");
+											priceForBorrowField.reportValidity();  // Display validation message
+										} else {
+											priceForBorrowField.setCustomValidity("");  // Clear validation message
+										}
+									}
+								</script>
+
+
+
+
+								
+
+
+						</div>
+
+							<div class="form-group">
+								<label>Available Formats:</label>
+								<div class="form-check">
+									<input type="checkbox" class="form-check-input" id="PDF" name="PDF" value="true" @(Model.PDF ? "checked" : "")>
+									<label class="form-check-label" for="PDF">PDF</label>
+								</div>
+								<div class="form-check">
+									<input type="checkbox" class="form-check-input" id="epub" name="epub" value="true" @(Model.epub ? "checked" : "")>
+									<label class="form-check-label" for="epub">epub</label>
+								</div>
+								<div class="form-check">
+									<input type="checkbox" class="form-check-input" id="f2b" name="f2b" value="true" @(Model.f2b ? "checked" : "")>
+									<label class="form-check-label" for="f2b">f2b</label>
+								</div>
+								<div class="form-check">
+									<input type="checkbox" class="form-check-input" id="mobi" name="mobi" value="true" @(Model.mobi ? "checked" : "")>
+									<label class="form-check-label" for="mobi">mobi</label>
+								</div>
+							</div>
+
+
+						@if (TempData["Message"] != null)
+						{
+						<div class="alert alert-info">
+								@TempData["Message"]
+						</div>
+						}
+
+						
+					<button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Update</button>
+				</form>
+				 <br />
+				 <br />
+
+					
+
+
+						<form action="ShowAdminPage" method="POST">
+							<button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Return to my Home Page</button>
+							
+						
+						</form>
+
+
+						<form action="DeleteSale" method="post" class="d-inline">
+							<input type="hidden" name="BookTitle" value="@Model.BookTitle" />
+							<input type="hidden" name="Author" value="@Model.Author" />
+							<input type="hidden" name="Publisher" value="@Model.Publisher" />
+							<input type="hidden" name="YearOfPublication" value="@Model.YearOfPublication" />
+
+
+							<button type="submit" name="DeleteSale" value="Delete" class="btn btn-danger btn-sm">Delete Sale</button>
+						</form>
+
+
+					<!-- Modal HTML -->
+					<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+								<div class="modal-body">
+									Are you sure you want to delete this book?
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+									<button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+								</div>
+							</div>
+						</div>
+					</div>
+		
+
+						
+					<!-- Form for deleting book -->
+					<form action="/Admin/DeleteBook" method="post" class="d-inline" id="deleteForm">
+						<input type="hidden" name="BookTitle" value="@Model.BookTitle" />
+						<input type="hidden" name="Author" value="@Model.Author" />
+						<input type="hidden" name="Publisher" value="@Model.Publisher" />
+						<input type="hidden" name="YearOfPublication" value="@Model.YearOfPublication" />
+						<button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Book</button>
+					</form>
+
+					<!-- Include Bootstrap JavaScript and CSS -->
+					<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+					<script>
+						// Confirm delete button event
+						document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+							// Submit the form when user confirms deletion
+							document.getElementById('deleteForm').submit();
+						});
+					</script>
+
+
+		
+
+
+					
+				
+			</div>
+
+
+		</div>
+
+		}
+
+			@if (TempData["MESSAGEdelete"] != null)
+			{
+				<div class="alert alert-info text-center">
+					<strong>Notice: </strong>@TempData["MESSAGEdelete"]
+				</div>
+
+				<div class="d-flex justify-content-center">
+					<form action="ShowAdminPage" method="POST">
+						<button type="submit" class="btn btn-primary btn-lg">Return to Admin Home Page</button>
+					</form>
+				</div>
+			}
+
+</div>
+
+</div>
+</div>
+

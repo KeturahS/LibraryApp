@@ -1,0 +1,197 @@
+﻿<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-md-8">
+        <h4 class="text-center display-4 text-primary mb-4" style="font-size: 2rem">Enter Book Information</h4>
+        <div class="p-3 bg-light border rounded shadow-sm">
+            <form action="AddBook" method="POST">
+
+                <!-- Row 1 -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="BookTitle" class="small">Book Title:</label>
+                        <input type="text" id="BookTitle" name="BookTitle" class="form-control form-control-sm" value="@Model.BookTitle">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="Author" class="small">Author:</label>
+                        <input type="text" id="Author" name="Author" class="form-control form-control-sm" value="@Model.Author">
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="Publisher" class="small">Publisher:</label>
+                        <input type="text" id="Publisher" name="Publisher" class="form-control form-control-sm" value="@Model.Publisher">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="YearOfPublication" class="small">Year of Publication:</label>
+                        <input type="number" id="YearOfPublication" name="YearOfPublication" class="form-control form-control-sm" value="@Model.YearOfPublication" min="1700" step="1">
+                    </div>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="Genre" class="small">Genre:</label>
+                        <select id="Genre" name="Genre" class="form-control form-control-sm">
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Mystery">Mystery</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Science Fiction">Science Fiction</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Biography">Biography</option>
+                            <option value="History">History</option>
+                            <option value="Poetry">Poetry</option>
+                        </select>
+                    </div>
+
+
+
+                    <div class="col-md-6">
+                        <label for="Popularity" class="small">Popularity:</label>
+                        <select id="Popularity" name="Popularity" class="form-control form-control-sm">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+
+
+
+                    <div class="col-md-6">
+                        <label for="AvailableFormats" class="small">Available Formats:</label>
+                        <div class="form-control form-control-sm">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="PDF" name="PDF" value="true">
+                                <label class="form-check-label" for="PDF">PDF</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="epub" name="epub" value="true">
+                                <label class="form-check-label" for="epub">epub</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="f2b" name="f2b" value="true">
+                                <label class="form-check-label" for="f2b">f2b</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="mobi" name="mobi" value="true">
+                                <label class="form-check-label" for="mobi">mobi</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="col-md-6">
+                        <label for="AgeRestriction" class="small">Age Restriction:</label>
+                        <select id="AgeRestriction" name="AgeRestriction" class="form-control form-control-sm">
+                            <option value="18+">18+</option>
+                            <option value="21+">21+</option>
+                            <option value="12+">12+</option>
+                            <option value="7+">7+</option>
+                            <option value="All Ages">All Ages</option>
+                        </select>
+                    </div>
+                  
+                </div>
+
+                <!-- Row 4 -->
+                <div class="row mt-3">
+
+                    <div class="col-md-6">
+                        <label for="PriceForBorrow" class="small">Price for Borrow:</label>
+                        <input type="number" step="0.01" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" value="@Model.PriceForBorrow" min="0">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="PriceForBuy" class="small">Price for Buy:</label>
+                        <input type="number" step="0.01" id="PriceForBuy" name="PriceForBuy" class="form-control form-control-sm" value="@Model.PriceForBuy" min="0">
+                    </div>
+                    
+                </div>
+
+                <!-- Row 5 -->
+                <div class="row mt-3 align-items-center">
+                    <div class="col-md-3">
+                        <label for="IsOnSale" class="small">Is on Sale:</label>
+                        <select id="IsOnSale" name="IsOnSale" class="form-control form-control-sm" onchange="DealWitheDiscountFields()">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                            </select>
+                    </div>
+                </div>
+
+                    <div class="row mt-3 align-items-center">
+                        <div class="col-md-3">
+                        <label for="DISCOUNTEDPriceForBuy" class="small"> Discounted Price for Buy:</label>
+                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBuy" name="DISCOUNTEDPriceForBuy" class="form-control form-control-sm" disabled>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="DISCOUNTEDPriceForBorrow" class="small"> Discounted Price for Borrow:</label>
+                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled>
+                    </div>
+                </div>
+         
+
+                <script>
+                    function DealWitheDiscountFields() {
+                        const isOnSale = document.getElementById("IsOnSale").value;
+                        const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
+                        const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+
+                        if (isOnSale === "1") {
+                            discountedBuyField.disabled = false;
+                            discountedBorrowField.disabled = false;
+                        } else {
+                            discountedBuyField.disabled = true;
+                            discountedBuyField.value = ""; // Clear the field
+                            discountedBorrowField.disabled = true;
+                            discountedBorrowField.value = ""; // Clear the field
+                        }
+                    }
+                </script>
+
+
+
+                      
+              
+
+
+                <!-- Row 6 -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="ImageUrl" class="small">Image URL:</label>
+                        <input type="url" id="ImageUrl" name="ImageUrl" class="form-control form-control-sm" value="@Model.ImageUrl">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-group text-center mt-4">
+                    <input type="submit" class="btn btn-primary btn-sm" value="ADD">
+                </div>
+
+
+             
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (TempData["BookAddedSuccessfully"] != null)
+{
+    <div class="alert alert-success">@TempData["BookAddedSuccessfully"]</div>
+}
+
+
+<script>
+    // עדכון המקסימום לשנה העדכנית
+    document.getElementById('YearOfPublication').max = new Date().getFullYear();
+</script>

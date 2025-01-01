@@ -96,10 +96,7 @@ namespace LibraryApp.Controllers
 
 
 		}
-
-
-
-        
+    
 
 
         public IActionResult SignIn()
@@ -136,14 +133,14 @@ namespace LibraryApp.Controllers
                 if (status == "Admin")
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
-                    return View("Admin_Home_Page", model);
+                    return RedirectToAction("ShowAdminPage", "Admin");
                 }
 
-                if (status == "User")
-                {
-                    HttpContext.Session.SetString("CurrentUser", model.email);
-                    return RedirectToAction("ShowBooks");
-                }
+                //if (status == "User")
+                //{
+                //    HttpContext.Session.SetString("CurrentUser", model.email);
+                //    return RedirectToAction("ShowBooks");
+                //}
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid email or password.");
@@ -155,58 +152,58 @@ namespace LibraryApp.Controllers
         }
 
 
-        public IActionResult ShowBooks(string searchQuery)
-        {
-            List<Book> books = new List<Book>();
+        //public IActionResult ShowBooks(string searchQuery)
+        //{
+        //    List<Book> books = new List<Book>();
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                string query;
+        //    using (SqlConnection connection = new SqlConnection(connectionString))
+        //    {
+        //        connection.Open();
+        //        string query;
 
-                if (string.IsNullOrEmpty(searchQuery))
-                {
-                    query = "SELECT * FROM Books"; // שלוף את כל הספרים אם אין חיפוש
-                }
-                else
-                {
-                    // הפוך את השאילתה ללא תלויה באותיות קטנות/גדולות
-                    query = "SELECT * FROM Books WHERE LOWER(Title) LIKE LOWER(@SearchQuery)";
-                }
+        //        if (string.IsNullOrEmpty(searchQuery))
+        //        {
+        //            query = "SELECT * FROM Books"; // שלוף את כל הספרים אם אין חיפוש
+        //        }
+        //        else
+        //        {
+        //            // הפוך את השאילתה ללא תלויה באותיות קטנות/גדולות
+        //            query = "SELECT * FROM Books WHERE LOWER(Title) LIKE LOWER(@SearchQuery)";
+        //        }
 
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    if (!string.IsNullOrEmpty(searchQuery))
-                    {
-                        command.Parameters.AddWithValue("@SearchQuery", "%" + searchQuery.ToLower() + "%");
-                    }
+        //        using (SqlCommand command = new SqlCommand(query, connection))
+        //        {
+        //            if (!string.IsNullOrEmpty(searchQuery))
+        //            {
+        //                command.Parameters.AddWithValue("@SearchQuery", "%" + searchQuery.ToLower() + "%");
+        //            }
 
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            books.Add(new Book
-                            {
-                                Id = reader.GetInt32(0),
-                                Title = reader.GetString(1),
-                                Author = reader.GetString(2),
-                                Publisher = reader.GetString(3),
-                                BorrowPrice = reader.GetDecimal(4),
-                                BuyPrice = reader.GetDecimal(5),
-                                AvailableCopies = reader.GetInt32(6),
-                                ImageUrl = reader.GetString(7)
-                            });
-                        }
-                    }
-                }
-                connection.Close();
-            }
+        //            using (SqlDataReader reader = command.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    books.Add(new Book
+        //                    {
+        //                        Id = reader.GetInt32(0),
+        //                        Title = reader.GetString(1),
+        //                        Author = reader.GetString(2),
+        //                        Publisher = reader.GetString(3),
+        //                        BorrowPrice = reader.GetDecimal(4),
+        //                        BuyPrice = reader.GetDecimal(5),
+        //                        AvailableCopies = reader.GetInt32(6),
+        //                        ImageUrl = reader.GetString(7)
+        //                    });
+        //                }
+        //            }
+        //        }
+        //        connection.Close();
+        //    }
 
-            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
-            ViewBag.SearchQuery = searchQuery;
+        //    ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+        //    ViewBag.SearchQuery = searchQuery;
 
-            return View("UserPageUpdated", books);
-        }
+        //    return View("UserPageUpdated", books);
+        //}
 
 
 
@@ -264,144 +261,144 @@ namespace LibraryApp.Controllers
 		}
 
 
-        public IActionResult BookDetails(int id)
-        {
-            Book book = null;
+        //public IActionResult BookDetails(int id)
+        //{
+        //    Book book = null;
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = "SELECT * FROM Books WHERE Id = @BookId";
+        //    using (SqlConnection connection = new SqlConnection(connectionString))
+        //    {
+        //        connection.Open();
+        //        string query = "SELECT * FROM Books WHERE Id = @BookId";
 
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@BookId", id);
+        //        using (SqlCommand command = new SqlCommand(query, connection))
+        //        {
+        //            command.Parameters.AddWithValue("@BookId", id);
 
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            book = new Book
-                            {
-                                Id = reader.GetInt32(0),
-                                Title = reader.GetString(1),
-                                Author = reader.GetString(2),
-                                Publisher = reader.GetString(3),
-                                BorrowPrice = reader.GetDecimal(4),
-                                BuyPrice = reader.GetDecimal(5),
-                                AvailableCopies = reader.GetInt32(6),
-                                ImageUrl = reader.GetString(7)
-                            };
-                        }
-                    }
-                }
-                connection.Close();
-            }
+        //            using (SqlDataReader reader = command.ExecuteReader())
+        //            {
+        //                if (reader.Read())
+        //                {
+        //                    book = new Book
+        //                    {
+        //                        Id = reader.GetInt32(0),
+        //                        Title = reader.GetString(1),
+        //                        Author = reader.GetString(2),
+        //                        Publisher = reader.GetString(3),
+        //                        BorrowPrice = reader.GetDecimal(4),
+        //                        BuyPrice = reader.GetDecimal(5),
+        //                        AvailableCopies = reader.GetInt32(6),
+        //                        ImageUrl = reader.GetString(7)
+        //                    };
+        //                }
+        //            }
+        //        }
+        //        connection.Close();
+        //    }
 
-            if (book == null)
-            {
-                return NotFound(); // אם הספר לא נמצא
-            }
+        //    if (book == null)
+        //    {
+        //        return NotFound(); // אם הספר לא נמצא
+        //    }
 
-            return View(book);
-        }
-
-
-        [HttpPost]
-        public IActionResult BorrowBook(int bookId)
-        {
-            string currentUser = HttpContext.Session.GetString("CurrentUser");
-
-            if (string.IsNullOrEmpty(currentUser))
-            {
-                TempData["ErrorMessage"] = "You need to log in to borrow books.";
-                return RedirectToAction("SignIn");
-            }
-
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-
-                // בדיקה כמה ספרים כבר מושאלים על ידי המשתמש
-                string countQuery = "SELECT COUNT(*) FROM BorrowedBooks WHERE UserEmail = @UserEmail";
-                using (SqlCommand countCommand = new SqlCommand(countQuery, connection))
-                {
-                    countCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-
-                    int borrowedCount = (int)countCommand.ExecuteScalar();
-
-                    if (borrowedCount >= 3)
-                    {
-                        TempData["ErrorMessage"] = "You can only borrow up to 3 books.";
-                        return RedirectToAction("BookDetails", new { id = bookId });
-                    }
-                }
-
-                // בדיקה אם הספר זמין
-                string availabilityQuery = "SELECT AvailableCopies FROM Books WHERE Id = @BookId";
-                using (SqlCommand availabilityCommand = new SqlCommand(availabilityQuery, connection))
-                {
-                    availabilityCommand.Parameters.AddWithValue("@BookId", bookId);
-                    int availableCopies = (int)availabilityCommand.ExecuteScalar();
-
-                    if (availableCopies <= 0)
-                    {
-                        TempData["ErrorMessage"] = "This book is currently not available.";
-                        return RedirectToAction("BookDetails", new { id = bookId });
-                    }
-                }
-
-                // הוספת הרשומה לטבלת ההשאלות
-                string borrowQuery = "INSERT INTO BorrowedBooks (UserEmail, BookId, BorrowDate) VALUES (@UserEmail, @BookId, GETDATE())";
-                using (SqlCommand borrowCommand = new SqlCommand(borrowQuery, connection))
-                {
-                    borrowCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-                    borrowCommand.Parameters.AddWithValue("@BookId", bookId);
-                    borrowCommand.ExecuteNonQuery();
-                }
-
-                // עדכון עותקים זמינים
-                string updateQuery = "UPDATE Books SET AvailableCopies = AvailableCopies - 1 WHERE Id = @BookId";
-                using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
-                {
-                    updateCommand.Parameters.AddWithValue("@BookId", bookId);
-                    updateCommand.ExecuteNonQuery();
-                }
-            }
-
-            TempData["SuccessMessage"] = "Book borrowed successfully!";
-            return RedirectToAction("BookDetails", new { id = bookId });
-        }
+        //    return View(book);
+        //}
 
 
-        [HttpPost]
-        public IActionResult PurchaseBook(int bookId)
-        {
-            string currentUser = HttpContext.Session.GetString("CurrentUser");
+        //[HttpPost]
+        //public IActionResult BorrowBook(int bookId)
+        //{
+        //    string currentUser = HttpContext.Session.GetString("CurrentUser");
 
-            if (string.IsNullOrEmpty(currentUser))
-            {
-                TempData["ErrorMessage"] = "You need to log in to purchase books.";
-                return RedirectToAction("SignIn");
-            }
+        //    if (string.IsNullOrEmpty(currentUser))
+        //    {
+        //        TempData["ErrorMessage"] = "You need to log in to borrow books.";
+        //        return RedirectToAction("SignIn");
+        //    }
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
+        //    using (SqlConnection connection = new SqlConnection(connectionString))
+        //    {
+        //        connection.Open();
 
-                // הוספת רכישה לטבלה
-                string purchaseQuery = "INSERT INTO PurchasedBooks (UserEmail, BookId, PurchaseDate) VALUES (@UserEmail, @BookId, GETDATE())";
-                using (SqlCommand purchaseCommand = new SqlCommand(purchaseQuery, connection))
-                {
-                    purchaseCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-                    purchaseCommand.Parameters.AddWithValue("@BookId", bookId);
-                    purchaseCommand.ExecuteNonQuery();
-                }
-            }
+        //        // בדיקה כמה ספרים כבר מושאלים על ידי המשתמש
+        //        string countQuery = "SELECT COUNT(*) FROM BorrowedBooks WHERE UserEmail = @UserEmail";
+        //        using (SqlCommand countCommand = new SqlCommand(countQuery, connection))
+        //        {
+        //            countCommand.Parameters.AddWithValue("@UserEmail", currentUser);
 
-            TempData["SuccessMessage"] = "Book purchased successfully!";
-            return RedirectToAction("BookDetails", new { id = bookId });
-        }
+        //            int borrowedCount = (int)countCommand.ExecuteScalar();
+
+        //            if (borrowedCount >= 3)
+        //            {
+        //                TempData["ErrorMessage"] = "You can only borrow up to 3 books.";
+        //                return RedirectToAction("BookDetails", new { id = bookId });
+        //            }
+        //        }
+
+        //        // בדיקה אם הספר זמין
+        //        string availabilityQuery = "SELECT AvailableCopies FROM Books WHERE Id = @BookId";
+        //        using (SqlCommand availabilityCommand = new SqlCommand(availabilityQuery, connection))
+        //        {
+        //            availabilityCommand.Parameters.AddWithValue("@BookId", bookId);
+        //            int availableCopies = (int)availabilityCommand.ExecuteScalar();
+
+        //            if (availableCopies <= 0)
+        //            {
+        //                TempData["ErrorMessage"] = "This book is currently not available.";
+        //                return RedirectToAction("BookDetails", new { id = bookId });
+        //            }
+        //        }
+
+        //        // הוספת הרשומה לטבלת ההשאלות
+        //        string borrowQuery = "INSERT INTO BorrowedBooks (UserEmail, BookId, BorrowDate) VALUES (@UserEmail, @BookId, GETDATE())";
+        //        using (SqlCommand borrowCommand = new SqlCommand(borrowQuery, connection))
+        //        {
+        //            borrowCommand.Parameters.AddWithValue("@UserEmail", currentUser);
+        //            borrowCommand.Parameters.AddWithValue("@BookId", bookId);
+        //            borrowCommand.ExecuteNonQuery();
+        //        }
+
+        //        // עדכון עותקים זמינים
+        //        string updateQuery = "UPDATE Books SET AvailableCopies = AvailableCopies - 1 WHERE Id = @BookId";
+        //        using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
+        //        {
+        //            updateCommand.Parameters.AddWithValue("@BookId", bookId);
+        //            updateCommand.ExecuteNonQuery();
+        //        }
+        //    }
+
+        //    TempData["SuccessMessage"] = "Book borrowed successfully!";
+        //    return RedirectToAction("BookDetails", new { id = bookId });
+        //}
+
+
+        //[HttpPost]
+        //public IActionResult PurchaseBook(int bookId)
+        //{
+        //    string currentUser = HttpContext.Session.GetString("CurrentUser");
+
+        //    if (string.IsNullOrEmpty(currentUser))
+        //    {
+        //        TempData["ErrorMessage"] = "You need to log in to purchase books.";
+        //        return RedirectToAction("SignIn");
+        //    }
+
+        //    using (SqlConnection connection = new SqlConnection(connectionString))
+        //    {
+        //        connection.Open();
+
+        //        // הוספת רכישה לטבלה
+        //        string purchaseQuery = "INSERT INTO PurchasedBooks (UserEmail, BookId, PurchaseDate) VALUES (@UserEmail, @BookId, GETDATE())";
+        //        using (SqlCommand purchaseCommand = new SqlCommand(purchaseQuery, connection))
+        //        {
+        //            purchaseCommand.Parameters.AddWithValue("@UserEmail", currentUser);
+        //            purchaseCommand.Parameters.AddWithValue("@BookId", bookId);
+        //            purchaseCommand.ExecuteNonQuery();
+        //        }
+        //    }
+
+        //    TempData["SuccessMessage"] = "Book purchased successfully!";
+        //    return RedirectToAction("BookDetails", new { id = bookId });
+        //}
 
 
 

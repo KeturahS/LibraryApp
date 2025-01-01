@@ -23,6 +23,9 @@ namespace LibraryApp.Models
                 {
                     connection.Open();
 
+
+                    var results = new List<T>();
+
                     using (Microsoft.Data.SqlClient.SqlCommand command = new Microsoft.Data.SqlClient.SqlCommand(query, connection))
                     {
                         if (parameters != null)
@@ -36,8 +39,6 @@ namespace LibraryApp.Models
                         // If a mapper is provided, assume it's a SELECT query
                         if (mapper != null)
                         {
-                            var results = new List<T>();
-
                             using (SqlDataReader reader = command.ExecuteReader())
                             {
                                 while (reader.Read())
@@ -46,19 +47,48 @@ namespace LibraryApp.Models
                                 }
                             }
 
-                            return results;
+
                         }
-                        else
-                        {
-                            // For non-SELECT queries, execute and return affected rows
-                            command.ExecuteNonQuery();
-                            return null; // For non-query actions, we don't return results
-                        }
+                     
                     }
+
+                    return results;
                 }
             }
 
 
-        }
+			public int ExecuteNonQuery(string query, Dictionary<string, object> parameters = null)
+			{
+				using (SqlConnection connection = new SqlConnection(_connectionString))
+				{
+					connection.Open();
+
+					using (SqlCommand command = new SqlCommand(query, connection))
+					{
+						if (parameters != null)
+						{
+							foreach (var param in parameters)
+							{
+								command.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+							}
+						}
+
+						return command.ExecuteNonQuery(); // Returns the number of affected rows
+					}
+				}
+			}
+
+
+
+
+
+
+		}
     }
 }
+     
+
+
+        
+    
+
