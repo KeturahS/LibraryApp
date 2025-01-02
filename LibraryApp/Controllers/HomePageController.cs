@@ -3,6 +3,7 @@ using LibraryApp.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using static LibraryApp.Models.ConnectionToDBmodel;
 
 namespace LibraryApp.Controllers
 {
@@ -55,7 +56,19 @@ namespace LibraryApp.Controllers
                             }
                             return RedirectToAction("SignIn");
                         }
-                    }
+
+
+						Gmail gmail = new Gmail();
+
+
+
+                        gmail.To = user.email;
+						gmail.Subject = "Welcome to ebooklibraryservice – Account Successfully Created!";
+						gmail.Body = "Dear " + user.FirstName + "\r\n\r\n"+ "Thank you for signing up! We’re excited to have you join our community.get started"+"\r\n\r\n"+ "If you have any questions, feel free to reach out to us at I.K.eBookLibraryService@gmail.com "+ "\r\n\r\n" + "We’re thrilled to have you on board!"
+                            + "\r\n\r\n" + "Warm regards," + "\r\n\r\n" + " The I.K eBook Library Team";
+
+						gmail.SendEmail();
+					}
                 }
             }
 
@@ -90,12 +103,14 @@ namespace LibraryApp.Controllers
                 if (status == "Admin")
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
+                    HttpContext.Session.SetString("Current user name", GetUser(model.email).FirstName);
                     return RedirectToAction("ShowAdminPage", "Admin");
                 }
 
                 if (status == "User")
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
+                    HttpContext.Session.SetString("Current user name", GetUser(model.email).FirstName);
                     return RedirectToAction("ShowBooks");
                 }
             }
@@ -103,6 +118,36 @@ namespace LibraryApp.Controllers
             TempData["ErrorMessage"] = "Invalid email or password.";
             return View("SignIn", model);
         }
+
+
+
+
+        private User GetUser(string email)
+        {
+            string query = "SELECT * FROM Users_tbl WHERE email = @email";
+
+            var parameters = new Dictionary<string, object>
+                {
+                    { "@email", email }      
+                };
+
+            // יצירת חיבור למסד הנתונים
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            // שליפת הספר מהמסד
+            var user = connection.ExecuteQuery<User>(
+                query, parameters, reader => new User
+                {
+                   FirstName = reader.GetString(1),
+                   LastName = reader.GetString(2),
+                }
+            );
+
+
+            return user.FirstOrDefault();
+        }
+
+
 
         public IActionResult ShowBooks(string searchQuery)
         {
@@ -139,19 +184,23 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(11),
-                                epub = reader.GetBoolean(12),
-                                f2b = reader.GetBoolean(13),
-                                mobi = reader.GetBoolean(14),
-                                Popularity = reader.GetInt32(15),
-                                ImageUrl = reader.GetString(16)
+                               
+                                PDF = reader.GetBoolean(14),
+                                epub = reader.GetBoolean(15),
+                                f2b = reader.GetBoolean(16),
+                                mobi = reader.GetBoolean(17),
+                                Popularity = reader.GetInt32(18),
+                                ImageUrl = reader.GetString(19),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
+
                             });
                         }
                     }
                 }
             }
 
-            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+            ViewBag.UserName = HttpContext.Session.GetString("Current user name");
+           
             ViewBag.SearchQuery = searchQuery;
 
             return View("UserPageUpdated", books);
@@ -213,6 +262,7 @@ namespace LibraryApp.Controllers
                         {
                             book = new Book
                             {
+
                                 BookTitle = reader.GetString(0),
                                 Author = reader.GetString(1),
                                 Publisher = reader.GetString(2),
@@ -224,12 +274,14 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(11),
-                                epub = reader.GetBoolean(12),
-                                f2b = reader.GetBoolean(13),
-                                mobi = reader.GetBoolean(14),
-                                Popularity = reader.GetInt32(15),
-                                ImageUrl = reader.GetString(16)
+
+                                PDF = reader.GetBoolean(14),
+                                epub = reader.GetBoolean(15),
+                                f2b = reader.GetBoolean(16),
+                                mobi = reader.GetBoolean(17),
+                                Popularity = reader.GetInt32(18),
+                                ImageUrl = reader.GetString(19),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
                             };
                         }
                     }
@@ -270,6 +322,7 @@ namespace LibraryApp.Controllers
                         {
                             books.Add(new Book
                             {
+
                                 BookTitle = reader.GetString(0),
                                 Author = reader.GetString(1),
                                 Publisher = reader.GetString(2),
@@ -281,19 +334,23 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(11),
-                                epub = reader.GetBoolean(12),
-                                f2b = reader.GetBoolean(13),
-                                mobi = reader.GetBoolean(14),
-                                Popularity = reader.GetInt32(15),
-                                ImageUrl = reader.GetString(16)
-                            });
+
+                                PDF = reader.GetBoolean(14),
+                                epub = reader.GetBoolean(15),
+                                f2b = reader.GetBoolean(16),
+                                mobi = reader.GetBoolean(17),
+                                Popularity = reader.GetInt32(18),
+                                ImageUrl = reader.GetString(19),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
+
+							});
                         }
                     }
                 }
             }
 
             ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+
             ViewBag.SearchQuery = searchQuery;
 
             return View("UserPageUpdated", books);
@@ -338,6 +395,7 @@ namespace LibraryApp.Controllers
                         {
                             books.Add(new Book
                             {
+
                                 BookTitle = reader.GetString(0),
                                 Author = reader.GetString(1),
                                 Publisher = reader.GetString(2),
@@ -349,12 +407,14 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(11),
-                                epub = reader.GetBoolean(12),
-                                f2b = reader.GetBoolean(13),
-                                mobi = reader.GetBoolean(14),
-                                Popularity = reader.GetInt32(15),
-                                ImageUrl = reader.GetString(16)
+
+                                PDF = reader.GetBoolean(14),
+                                epub = reader.GetBoolean(15),
+                                f2b = reader.GetBoolean(16),
+                                mobi = reader.GetBoolean(17),
+                                Popularity = reader.GetInt32(18),
+                                ImageUrl = reader.GetString(19),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
                             });
                         }
                     }
@@ -441,6 +501,7 @@ namespace LibraryApp.Controllers
                         {
                             books.Add(new Book
                             {
+
                                 BookTitle = reader.GetString(0),
                                 Author = reader.GetString(1),
                                 Publisher = reader.GetString(2),
@@ -452,12 +513,14 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(11),
-                                epub = reader.GetBoolean(12),
-                                f2b = reader.GetBoolean(13),
-                                mobi = reader.GetBoolean(14),
-                                Popularity = reader.GetInt32(15),
-                                ImageUrl = reader.GetString(16)
+
+                                PDF = reader.GetBoolean(14),
+                                epub = reader.GetBoolean(15),
+                                f2b = reader.GetBoolean(16),
+                                mobi = reader.GetBoolean(17),
+                                Popularity = reader.GetInt32(18),
+                                ImageUrl = reader.GetString(19),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
                             });
                         }
                     }

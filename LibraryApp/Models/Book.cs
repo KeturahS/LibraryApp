@@ -27,8 +27,14 @@ namespace LibraryApp.Models
         public  string AgeRestriction { get; set; }
 
 
-		[Required]
+
 		public bool IsOnSale { get; set; }
+		public int AmountOfSaleDays { get; set; }
+
+		public DateTime SaleStartDate { get; set; }
+		public DateTime SaleEndDate { get; set; }
+
+		public int AvailableAmountOfCopiesToBorrow { get; set; }
 
 		public bool PDF { get; set; }
 		public bool epub { get; set; }

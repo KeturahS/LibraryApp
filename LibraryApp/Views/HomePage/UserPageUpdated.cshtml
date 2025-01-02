@@ -174,6 +174,21 @@
                                     }
                                 </p>
                                 <a href="/HomePage/BookDetails?bookTitle=@Uri.EscapeDataString(book.BookTitle)&author=@Uri.EscapeDataString(book.Author)&publisher=@Uri.EscapeDataString(book.Publisher)&yearOfPublication=@book.YearOfPublication" class="btn btn-primary">View Details</a>
+                                <br />
+                                <br />
+
+                                @if (book.AvailableAmountOfCopiesToBorrow==0)
+                               { <form action="/Admin/ShowBorrowingWaitingList" method="post" class="d-inline">
+                                        <input type="hidden" name="userId" value=@ViewBag.UserName />
+                                        <input type="hidden" name="BookTitle" value=book.BookTitle/>
+                                        <input type="hidden" name="Author" value=@book.Author/>
+                                        <input type="hidden" name="Publisher" value=@book.Publisher />
+                                        <input type="hidden" name="YearOfPublication" value=@book.YearOfPublication />
+
+                                        <button type="submit" class=" p-3 bg-light border rounded shadow-sm">Check out option for borrowing this book</button>
+                                </form>
+                               }
+                               
 
                             </div>
                         </div>

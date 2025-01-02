@@ -1,30 +1,77 @@
 ﻿@model LibraryApp.Models.ViewModel.AdminViewModel
 
 
-<div class="container mt-5 d-flex justify-content-center align-items-center" style="height: 20vh;">
-    <div class="text-center" style="width: 70%; background-color: #f8f9fa; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
-        <h3 class="display-4 text-primary mb-4">Welcome to the Admin Dashboard</h3>
-        <!-- Scrolling Text -->
-        <marquee behavior="scroll" direction="left" style="font-size: 1.2rem;">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+    body {
+        background-color: #E6F3FF;
+    }
+
+    .navbar {
+        background-color: #4DA8DA !important;
+    }
+
+    .card {
+        background-color: #F0F8FF;
+        border: 1px solid #87CEFA;
+    }
+
+    .card-header {
+        background-color: #B0E0E6;
+        color: #00008B;
+    }
+
+    .btn-primary {
+        background-color: #4DA8DA;
+        border-color: #4DA8DA;
+    }
+
+        .btn-primary:hover {
+            background-color: #1E90FF;
+            border-color: #1E90FF;
+        }
+
+    .btn-outline-primary {
+        color: #4DA8DA;
+        border-color: #4DA8DA;
+    }
+
+        .btn-outline-primary:hover {
+            background-color: #4DA8DA;
+            color: white;
+        }
+
+    .table {
+        background-color: white;
+    }
+
+    .marquee {
+        background-color: #B0E0E6;
+        color: #00008B;
+    }
+</style>
+
+
+<div class="container mt-4">
+    <div class="marquee mb-4 p-2 rounded">
+        <marquee>
             Manage book formats, prices, availability, and user registrations with ease!
-            <span class="font-weight-bold text-success">Set discounts</span>,
-            <span class="font-weight-bold text-warning">manage borrow lists</span>,
+            <span class="fw-bold text-success">Set discounts</span>,
+            <span class="fw-bold text-warning">manage borrow lists</span>,
             and keep the catalog fresh and up-to-date – all from one place.
         </marquee>
     </div>
-</div>
 
-
-
-<div class="container mt-5">
-    <!-- שורה ראשונה: הצגת משתמשים וספרים -->
-                <div class="row mb-4">
-                    <!-- עמודת ניהול משתמשים -->
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light border rounded shadow-sm">
-                            <h4 class="text-center text-primary mb-3">User Management</h4>
-                            <div style="overflow-x: auto; max-height: 300px;">
-                                        <table class="table table-striped table-sm w-auto">
+    <div class="row">
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive mb-3">
+                        <table class="table table-striped table-hover">
                                             <thead>
                                                 <tr>
                                                     <th>Status</th>
@@ -59,52 +106,78 @@
                                             </tbody>
                                         </table>
 
+                                   </div>
 
-
-                    <br />
-
-                    <br />
-
-                    <br />
-
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light border rounded shadow-sm">
-                            <h4 class="text-center text-primary mb-3">Add New User</h4>
-                            <a href="/HomePage/SignUp" class="btn btn-primary btn-sm d-block mx-auto">Sign up new user</a>
-                        </div>
-                    </div>
-
-
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light border rounded shadow-sm">
+                                        <h4 class="text-center text-primary mb-3">Add New User</h4>
+                                        <a href="/HomePage/SignUp" class="btn btn-primary btn-sm d-block mx-auto">Sign up new user</a>
                                     </div>
+                                </div>
+                </div>
+            </div>
 
-                            </div>
-                        </div>
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pending Admin Requests</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.AdminUserRequests != null && Model.AdminUserRequests.Any())
+                            { @foreach (var user in Model.AdminUserRequests)
+                                {
+                                    <tr>
+                                        <td>@user.FirstName</td>
+                                        <td>@user.LastName</td>
+                                        <td>@user.email</td>
+                                        <td>@user.Status</td>
+                                        <td>
+                                            <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
+                                                <input type="hidden" name="userId" value="@user.email" />
+                                                <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+                                                <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
 
 
+                        </tbody>
+                    </table>
+                </div>
+             </div>
+           </div>
+        </div> 
+        
+      
+        <div class="col-lg-7 mb-4">
+                  
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Book Management</h5>           <!-- search book -->
+                </div>
 
-
-
-        <br />
-
-        <br />
-
-        <br />
-
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light border rounded shadow-sm">
-                            <h4 class="text-center text-primary mb-3">Book Management</h4>
-
-                            <!-- search book -->
-                            <div class="p-3 bg-light border rounded shadow-sm mb-4">
-                                <h4 id="form-title" class="text-center mb-3">Select Book from the eBook Library</h4> <!-- כותרת ברירת מחדל -->
-                                <form asp-action="SelectBook" method="post" onsubmit="return validateForm()">
+                <div class="card-body">
+                    <form class="mb-3" asp-action="SelectBook" method="post" onsubmit="return validateForm()">
                                     <div class="form-group">
                                         <input type="text" id="BookChosen" name="BookChosen" class="form-control form-control-sm">
                                         <span id="error-message" style="color: red; display: none;">Please enter a book name to search.</span> <!-- הודעת השגיאה -->
                                     </div>
                                     <button type="submit" class="btn btn-primary mt-2">Search</button>
-                                </form>
-                            </div>
+                    </form>
+                           
 
                             <script>
                                 function validateForm() {
@@ -126,9 +199,9 @@
                             </script>
 
 
-
-                             <table id="booksTable" class="table table-striped table-sm w-auto">
-                                    >
+                    <div class="table-responsive mb-3">
+                        <table id="booksTable" class="table table-striped table-hover">
+           >
                                     <thead>
                                         <tr>
                                             <th>Book Title</th>
@@ -218,87 +291,26 @@
                                         }
                                     </tbody>
                                 </table>
+                          </div>
 
 
 
-                                <br />
-                                
-                                <br />
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light border rounded shadow-sm">
+                                    <h4 class="text-center text-primary mb-3">Add New Book</h4>
+                                    <form asp-action="SendEmptyBook" method="post">
+                                        <button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Add a book</button>
+                                    </form>
+                                </div>
+                            </div>
 
-                                 <br />
 
 
-                <div class="col-md-6">
-                    <div class="p-3 bg-light border rounded shadow-sm">
-                        <h4 class="text-center text-primary mb-3">Add New Book</h4>
-                        <form asp-action="SendEmptyBook" method="post">
-                            <button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Add a book</button>
-                        </form>
-                    </div>
                 </div>
-                    
-                             </div>
-                        </div>
-                    </div>
             </div>
-
-
-
-
-<br />
-
-<br />
-
-<br />
-
-
-
-
-<div class="row">
-
-            <div class="p-3 bg-light border rounded shadow-sm mb-4">
-                <h4 class="text-center mb-3">Pending Admin Requests</h4>
-                <table class="table table-striped table-sm w-auto">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.AdminUserRequests != null && Model.AdminUserRequests.Any())
-                        { @foreach (var user in Model.AdminUserRequests)
-                            {
-                                <tr>
-                                    <td>@user.FirstName</td>
-                                    <td>@user.LastName</td>
-                                    <td>@user.email</td>
-                                    <td>@user.Status</td>
-                                    <td>
-                                        <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
-                                            <input type="hidden" name="userId" value="@user.email" />
-                                            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
-                                            <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        }
-
-
-                    </tbody>
-                </table>
-            </div>
+        </div>
+    </div>
 </div>
-
-
-
-
-
-
-
 
 
 
