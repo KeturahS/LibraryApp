@@ -1,9 +1,6 @@
 ﻿@model LibraryApp.Models.ViewModel.AdminViewModel
 
 
-
-
-
 <div class="container mt-5 d-flex justify-content-center align-items-center" style="height: 20vh;">
     <div class="text-center" style="width: 70%; background-color: #f8f9fa; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
         <h3 class="display-4 text-primary mb-4">Welcome to the Admin Dashboard</h3>
@@ -19,287 +16,291 @@
 
 
 
+<div class="container mt-5">
+    <!-- שורה ראשונה: הצגת משתמשים וספרים -->
+                <div class="row mb-4">
+                    <!-- עמודת ניהול משתמשים -->
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light border rounded shadow-sm">
+                            <h4 class="text-center text-primary mb-3">User Management</h4>
+                            <div style="overflow-x: auto; max-height: 300px;">
+                                        <table class="table table-striped table-sm w-auto">
+                                            <thead>
+                                                <tr>
+                                                    <th>Status</th>
+                                                    <th>FirstName</th>
+                                                    <th>LastName</th>
+                                                    <th>email</th>
+                                                    <th>Password</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @if (Model.AdminUserRequests != null)
+                                                {
+                                                    @foreach (var user in Model.AllUsers)
+                                                    {
+                                                        <tr>
+                                                            <td>@user.Status</td>
+                                                            <td>@user.FirstName</td>
+                                                            <td>@user.LastName</td>
+                                                            <td>@user.email</td>
+                                                            <td>@user.Password</td>
+
+                                                            <td>
+                                                                <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
+                                                                    <input type="hidden" name="userId" value="@user.email" />
+                                                                    <button type="submit" name="action" value="Delete" class="btn btn-danger btn-sm">Delete User</button>
+                                                                </form>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+
+                                            </tbody>
+                                        </table>
 
 
-<div class="container">
-    <div class="row">
 
-        <div class="col-md-4 d-flex flex-column align-items-center">
+                    <br />
 
-      <!-- Left-Side User Management -->
+                    <br />
 
-            <h4 class="text-center display-4 text-primary mb-4" style="font-size: 2rem" >User Management</h4>
+                    <br />
+
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light border rounded shadow-sm">
+                            <h4 class="text-center text-primary mb-3">Add New User</h4>
+                            <a href="/HomePage/SignUp" class="btn btn-primary btn-sm d-block mx-auto">Sign up new user</a>
+                        </div>
+                    </div>
+
+
+                                    </div>
+
+                            </div>
+                        </div>
+
+
+
+
+
+        <br />
+
+        <br />
+
+        <br />
+
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light border rounded shadow-sm">
+                            <h4 class="text-center text-primary mb-3">Book Management</h4>
+
+                            <!-- search book -->
+                            <div class="p-3 bg-light border rounded shadow-sm mb-4">
+                                <h4 id="form-title" class="text-center mb-3">Select Book from the eBook Library</h4> <!-- כותרת ברירת מחדל -->
+                                <form asp-action="SelectBook" method="post" onsubmit="return validateForm()">
+                                    <div class="form-group">
+                                        <input type="text" id="BookChosen" name="BookChosen" class="form-control form-control-sm">
+                                        <span id="error-message" style="color: red; display: none;">Please enter a book name to search.</span> <!-- הודעת השגיאה -->
+                                    </div>
+                                    <button type="submit" class="btn btn-primary mt-2">Search</button>
+                                </form>
+                            </div>
+
+                            <script>
+                                function validateForm() {
+                                  var bookChosen = document.getElementById("BookChosen").value;
+                                  var errorMessage = document.getElementById("error-message");
+                                  var formTitle = document.getElementById("form-title");
+
+                                  // אם השדה ריק, הצג את הודעת השגיאה ושנה את הכותרת
+                                  if (bookChosen.trim() === "") {
+                                    errorMessage.style.display = "inline"; // הצג את הודעת השגיאה
+                                    formTitle.innerText = "Please enter a book name to search"; // שנה את כותרת הטופס
+                                    return false; // מונע שליחה
+                                  }
+
+                                  errorMessage.style.display = "none"; // אם יש ערך, הסתיר את הודעת השגיאה
+                                  formTitle.innerText = "Select Book from the eBook Library"; // החזר את הכותרת לברירת מחדל
+                                  return true;
+                                }
+                            </script>
+
+
+
+                             <table id="booksTable" class="table table-striped table-sm w-auto">
+                                    >
+                                    <thead>
+                                        <tr>
+                                            <th>Book Title</th>
+                                            <th>Author</th>
+                                            <th>Publisher</th>
+                                            <th>Year of Publication</th>
+                                            <th>Genre</th>
+                                            <th> Discounted Price for Borrow</th>
+                                            <th>Price for Borrow</th>
+                                            <th> Discounted Price for Buy</th>
+                                            <th>Price for Buy</th>
+                                            <th>Age Restriction</th>
+                                            <th>Formats Available</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (Model.SelectedBooks != null)
+                                        {
+                                            @foreach (var book in Model.SelectedBooks)
+                                            {
+                                                <tr>
+                                                    <td>@book.BookTitle</td>
+                                                    <td>@book.Author</td>
+                                                    <td>@book.Publisher</td>
+                                                    <td>@book.YearOfPublication</td>
+                                                    <td>@book.Genre</td>
+                                                    @if (book.DISCOUNTEDPriceForBorrow <= 0)
+                                                    {
+                                                        <td>No sale</td>
+                                                        <td> @book.PriceForBorrow</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> @book.DISCOUNTEDPriceForBorrow</td>
+                                                        <td> <s> @book.PriceForBorrow </s></td>
+
+                                                    }
+
+                                                    @if (book.DISCOUNTEDPriceForBuy <= 0)
+                                                    {
+                                                        <td>No sale</td>
+                                                        <td> @book.PriceForBuy</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> @book.DISCOUNTEDPriceForBuy</td>
+                                                        <td> <s> @book.PriceForBuy </s></td>
+
+                                                    }
+
+
+                                                    <td>@book.AgeRestriction</td>
+                                                    <td>
+                                                        @if (book.PDF)
+                                                        {
+                                                            <span class="badge bg-info">PDF</span>
+                                                        }
+                                                        @if (book.epub)
+                                                        {
+                                                            <span class="badge bg-warning">EPUB</span>
+                                                        }
+                                                        @if (book.f2b)
+                                                        {
+                                                            <span class="badge bg-success">F2B</span>
+                                                        }
+                                                        @if (book.mobi)
+                                                        {
+                                                            <span class="badge bg-danger">MOBI</span>
+                                                        }
+                                                    </td>
+
+
+
+                                                    <td>
+                                                        <form action="/Admin/ActionsForSelectedBook" method="post" class="d-inline">
+                                                            <input type="hidden" name="BookTitle" value="@book.BookTitle" />
+                                                            <input type="hidden" name="Author" value="@book.Author" />
+                                                            <input type="hidden" name="Publisher" value="@book.Publisher" />
+                                                            <input type="hidden" name="YearOfPublication" value="@book.YearOfPublication" />
+                                                            <button type="submit" name="action" value="Delete" class="btn btn-danger btn-sm">Select for further actions</button>
+                                                        </form>
+
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+
+
+
+                                <br />
+                                
+                                <br />
+
+                                 <br />
+
+
+                <div class="col-md-6">
+                    <div class="p-3 bg-light border rounded shadow-sm">
+                        <h4 class="text-center text-primary mb-3">Add New Book</h4>
+                        <form asp-action="SendEmptyBook" method="post">
+                            <button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Add a book</button>
+                        </form>
+                    </div>
+                </div>
+                    
+                             </div>
+                        </div>
+                    </div>
+            </div>
+
+
+
+
+<br />
+
+<br />
+
+<br />
+
+
+
+
+<div class="row">
 
             <div class="p-3 bg-light border rounded shadow-sm mb-4">
                 <h4 class="text-center mb-3">Pending Admin Requests</h4>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.AdminUserRequests != null && Model.AdminUserRequests.Any())
-                      { @foreach (var user in Model.AdminUserRequests)
-                        {
-                        <tr>
-                            <td>@user.FirstName</td>
-                            <td>@user.LastName</td>
-                            <td>@user.email</td>
-                            <td>@user.Status</td>
-                            <td>
-                                <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
-                                    <input type="hidden" name="userId" value="@user.email" />
-                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
-                                    <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
-                                </form>
-                            </td>
-                        </tr>
-                        }
-                      }
-
-
-                   </tbody>
-            </table>
-        </div>
-
-
-
-            <!-- Add New User -->
-            <div class="p-3 bg-light border rounded shadow-sm mb-4">
-                <h4 class="text-center mb-3">Add New User</h4>
-                <a href="/HomePage/SignUp" class="btn btn-primary btn-sm d-block mx-auto">Sign up new user</a>
-            </div>
-
-
-            <!-- View All Users -->
-            <div class="p-3 bg-light border rounded shadow-sm">
-                <h4 class="text-center mb-3">View All Users</h4>
-   
-
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                   @if (Model.AdminUserRequests != null)
-                    {
-                    @foreach (var user in Model.AllUsers)
-                    {
-                        <tr>
-                            <td>@user.Status</td>
-                            <td>@user.FirstName</td>
-                            <td>@user.LastName</td>
-                            <td>@user.email</td>
-                            <td>@user.Password</td>
-
-                            <td>
-                                <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
-                                    <input type="hidden" name="userId" value="@user.email" />
-                                    <button type="submit" name="action" value="Delete" class="btn btn-danger btn-sm">Delete User</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                    }
-
-                </tbody>
-            </table>
-        </div>
-              
-    </div>
-
-  
-
-
-
-
-
-
-
-<!-- Vertical Divider -->
-        <div class="col-md-1 d-flex justify-content-center align-items-center">
-            <div class="vertical-divider"></div>
-        </div>
-
-
-
-  <div class="col-md-7">
-        <h4 class="text-center display-4 text-primary mb-4" style="font-size: 2rem">Book Management</h4>
-
-
-            
-            <!-- search book -->
-            <div class="p-3 bg-light border rounded shadow-sm mb-4">
-                <h4 id="form-title" class="text-center mb-3">Select Book from the eBook Library</h4> <!-- כותרת ברירת מחדל -->
-                <form asp-action="SelectBook" method="post" onsubmit="return validateForm()">
-                    <div class="form-group">
-                        <input type="text" id="BookChosen" name="BookChosen" class="form-control form-control-sm">
-                        <span id="error-message" style="color: red; display: none;">Please enter a book name to search.</span> <!-- הודעת השגיאה -->
-                    </div>
-                    <button type="submit" class="btn btn-primary mt-2">Search</button>
-                </form>
-            </div>
-
-            <script>
-                function validateForm() {
-                    var bookChosen = document.getElementById("BookChosen").value;
-                    var errorMessage = document.getElementById("error-message");
-                    var formTitle = document.getElementById("form-title");
-
-                    // אם השדה ריק, הצג את הודעת השגיאה ושנה את הכותרת
-                    if (bookChosen.trim() === "") {
-                        errorMessage.style.display = "inline"; // הצג את הודעת השגיאה
-                        formTitle.innerText = "Please enter a book name to search"; // שנה את כותרת הטופס
-                        return false; // מונע שליחה
-                    }
-
-                    errorMessage.style.display = "none"; // אם יש ערך, הסתיר את הודעת השגיאה
-                    formTitle.innerText = "Select Book from the eBook Library"; // החזר את הכותרת לברירת מחדל
-                    return true;
-                }
-            </script>
-
-
-
-            <!-- View Selected Books -->
-            <div class="p-3 bg-light border rounded shadow-sm">
-                <h4 class="text-center mb-3">Select Book</h4>
-
-                <table id="booksTable" class="table table-striped">
+                <table class="table table-striped table-sm w-auto">
                     <thead>
                         <tr>
-                            <th>Book Title</th>
-                            <th>Author</th>
-                            <th>Publisher</th>
-                            <th>Year of Publication</th>
-                            <th>Genre</th>
-                            <th> Discounted Price for Borrow</th>
-                            <th>Price for Borrow</th>
-                            <th> Discounted Price for Buy</th>
-                            <th>Price for Buy</th>
-                            <th>Age Restriction</th>
-                            <th>Formats Available</th>
+                            <th>#</th>
+                            <th>Email</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model.SelectedBooks != null)
-                        {
-                            @foreach (var book in Model.SelectedBooks)
+                        @if (Model != null && Model.AdminUserRequests != null && Model.AdminUserRequests.Any())
+                        { @foreach (var user in Model.AdminUserRequests)
                             {
                                 <tr>
-                                    <td>@book.BookTitle</td>
-                                    <td>@book.Author</td>
-                                    <td>@book.Publisher</td>
-                                    <td>@book.YearOfPublication</td>
-                                    <td>@book.Genre</td>
-                                    @if(book.DISCOUNTEDPriceForBorrow<=0)
-                                    {
-                                        <td>No sale</td>
-                                        <td> @book.PriceForBorrow</td>
-                                    }
-                                    else
-                                    {
-                                        <td> @book.DISCOUNTEDPriceForBorrow</td>
-                                        <td> <s> @book.PriceForBorrow   </s></td>
-                                        
-                                    }
-
-                                    @if (book.DISCOUNTEDPriceForBuy <= 0)
-                                    {
-                                        <td>No sale</td>
-                                        <td> @book.PriceForBuy</td>
-                                    }
-                                    else
-                                    {
-                                        <td> @book.DISCOUNTEDPriceForBuy</td>
-                                        <td> <s> @book.PriceForBuy   </s></td>
-
-                                    }
-
-
-                                   <td>@book.AgeRestriction</td>
+                                    <td>@user.FirstName</td>
+                                    <td>@user.LastName</td>
+                                    <td>@user.email</td>
+                                    <td>@user.Status</td>
                                     <td>
-                                        @if (book.PDF)
-                                        {
-                                            <span class="badge bg-info">PDF</span>
-                                        }
-                                        @if (book.epub)
-                                        {
-                                            <span class="badge bg-warning">EPUB</span>
-                                        }
-                                        @if (book.f2b)
-                                        {
-                                            <span class="badge bg-success">F2B</span>
-                                        }
-                                        @if (book.mobi)
-                                        {
-                                            <span class="badge bg-danger">MOBI</span>
-                                        }
-                                    </td>
-                                                                      
-                                    
-                                    
-                                    <td>
-                                        <form action="/Admin/ActionsForSelectedBook" method="post" class="d-inline">
-                                            <input type="hidden" name="BookTitle" value="@book.BookTitle" />
-                                            <input type="hidden" name="Author" value="@book.Author" />
-                                            <input type="hidden" name="Publisher" value="@book.Publisher" />
-                                            <input type="hidden" name="YearOfPublication" value="@book.YearOfPublication" />
-                                            <button type="submit" name="action" value="Delete" class="btn btn-danger btn-sm">Select for further actions</button>
+                                        <form action="/Admin/ApproveRejectDeleteAdd" method="post" class="d-inline">
+                                            <input type="hidden" name="userId" value="@user.email" />
+                                            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+                                            <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
                                         </form>
-
                                     </td>
                                 </tr>
                             }
                         }
+
+
                     </tbody>
                 </table>
-            </div> 
-
-         
-
-
-        <!-- Add New book -->
-     <div class="p-3 bg-light border rounded shadow-sm mb-4">
-             <h4 class="text-center mb-3">Add New Book</h4>
-            <form asp-action="SendEmptyBook" method="post">
-               
-                <button type="submit" class="btn btn-primary btn-sm d-block mx-auto">Add a book</button>
-            </form>
-
-    </div>
-
-
-    
-
-
-
-
-        
-   </div>
-
-
-
-  
+            </div>
+</div>
 
 
 
 
 
-<style>
-    .vertical-divider {
-        border-left: 5px solid #808080; /* צבע המפריד */
-        height: 100%; /* גובה המפריד */
-        margin: 0 15px; /* ריווח מהצדדים */
-    }
-</style>
+
+
+
+
+
+
+

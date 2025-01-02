@@ -1,0 +1,51 @@
+﻿@model LibraryApp.Models.gmail
+
+
+@{
+
+Layout=null;
+
+}
+
+
+ @using (Html.BeginForm("Index", "EmailSetup", FormMethod.Post, new { enctype = "multipart/form-data" }))
+    {
+<center>
+   
+    <hr />
+    <table style="width: 80px;">
+        <tr>
+            <td>To:</td>
+            <td> @Html.TextBoxFor(Model=>Model.To)</td>
+        </tr>
+        <tr>
+            <td><input type="text" name="To" /></td>
+        </tr>
+        <tr>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Subject:</td>
+
+                <td>
+                <td> @Html.TextBoxFor(Model => Model.Subject)</td>
+            </tr>
+        <tr>
+
+            <td> valign="top">
+                Body:
+              </td>
+       
+                <td> @Html.TextAreaFor(Model => Model.Body, new { rows="15", cols="25"})</td>
+        </tr>
+        <tr>
+          
+         
+            <td><input type="submit" value="Send" /></td>
+        </tr>
+    </table>
+</center>
+    }
+
+
+

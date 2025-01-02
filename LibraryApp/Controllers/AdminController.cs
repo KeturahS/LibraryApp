@@ -1,9 +1,13 @@
 ﻿using LibraryApp.Models;
 using LibraryApp.Models.ViewModel;
+using LibraryApp.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles.Infrastructure;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System.Net;
+using System.Net.Mail;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Security.Policy;
@@ -101,11 +105,12 @@ namespace LibraryApp.Controllers
                 // Execute the update using ExecuteQuery
                 ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
 				connection.ExecuteNonQuery(updateQuery, parameters);
-
-
-
-
-			}
+                
+            
+            
+            
+            
+            }
 
             if (action == "reject")
             {
@@ -141,15 +146,6 @@ namespace LibraryApp.Controllers
 
             return RedirectToAction("ShowAdminPage");
         }
-
-
-        public IActionResult AddUser()
-        {
-
-            return View();
-        }
-
-
 
 
 
