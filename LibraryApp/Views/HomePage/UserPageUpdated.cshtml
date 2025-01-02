@@ -1,13 +1,24 @@
-﻿
-
-
-<div class="container py-5">
+﻿<div class="container py-5">
 
     <!-- Header Section -->
     <div class="text-center mb-5">
         <h1 class="display-4 text-primary">
             Welcome <strong>@ViewBag.UserName</strong> to eBook
         </h1>
+
+        <!-- Search Section -->
+        <div class="mb-4">
+            <form method="get" action="/HomePage/SearchBooks">
+                <div class="input-group">
+                    <input type="text"
+                           name="searchQuery"
+                           class="form-control"
+                           placeholder="Search by book title, author, or publisher..."
+                           value="@ViewBag.SearchQuery">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
 
         <!-- Cart Button -->
         <div class="mt-4">
@@ -16,20 +27,95 @@
             </a>
         </div>
     </div>
-
-    <!-- Search Section -->
+    <!-- order Button -->
     <div class="mb-4">
-        <form method="get" action="/HomePage/ShowBooks">
+        <form method="get" action="/HomePage/SortBooks">
             <div class="input-group">
-                <input type="text"
-                       name="searchQuery"
-                       class="form-control"
-                       placeholder="Search for a book..."
-                       value="@ViewBag.SearchQuery">
-                <button class="btn btn-primary" type="submit">Search</button>
+                <select name="sortOption" class="form-select">
+                    <option value="">Sort by...</option>
+                    <option value="priceLowToHigh">Price: Low to High</option>
+                    <option value="priceHighToLow">Price: High to Low</option>
+                    <option value="popularity">Popularity</option>
+                    <option value="genre">Genre</option>
+                    <option value="year">Year of Publication</option>
+                </select>
+                <button class="btn btn-primary" type="submit">Sort</button>
+
+                <h2>Book Catalog</h2>
+                @if (!string.IsNullOrEmpty(ViewBag.SortOption))
+                {
+                    <p>Sorted by: @ViewBag.SortOption</p>
+                }
+
             </div>
         </form>
     </div>
+
+    <!-- filter Button -->
+    <div class="mb-4">
+        <form method="get" action="/HomePage/FilterBooks">
+            <div class="row g-3">
+                <!-- Filter by Author -->
+                <div class="col-md-3">
+                    <input type="text"
+                           name="author"
+                           class="form-control"
+                           placeholder="Filter by Author"
+                           value="@ViewBag.Author">
+                </div>
+
+                <!-- Filter by Genre -->
+                <div class="col-md-3">
+                    <input type="text"
+                           name="genre"
+                           class="form-control"
+                           placeholder="Filter by Genre"
+                           value="@ViewBag.Genre">
+                </div>
+
+                <!-- Filter by Price Range -->
+                <div class="col-md-3">
+                    <input type="number"
+                           name="minPrice"
+                           class="form-control"
+                           placeholder="Min Price"
+                           value="@ViewBag.MinPrice">
+                </div>
+                <div class="col-md-3">
+                    <input type="number"
+                           name="maxPrice"
+                           class="form-control"
+                           placeholder="Max Price"
+                           value="@ViewBag.MaxPrice">
+                </div>
+
+                <!-- Filter by Sale -->
+                <div class="col-md-3">
+                    <select name="onSale" class="form-select">
+                        <option value="">Discounted Books</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+
+                <!-- Filter by Availability -->
+                <div class="col-md-3">
+                    <select name="availability" class="form-select">
+                        <option value="">Filter by Availability</option>
+                        <option value="borrow">Borrow</option>
+                        <option value="buy">Buy</option>
+                    </select>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
 
     <!-- Book Catalog Section -->
     <div>
@@ -40,21 +126,55 @@
         }
         else
         {
+
             <div class="row row-cols-1 row-cols-md-3 g-4">
                 @foreach (var book in Model)
                 {
                     <div class="col">
                         <div class="card h-100">
-                            <img src="@book.ImageUrl" class="card-img-top" alt="@book.Title">
+                            <img src="@book.ImageUrl" class="card-img-top" alt="@book.BookTitle">
                             <div class="card-body text-center">
-                                <h5 class="card-title">@book.Title</h5>
+                                <h5 class="card-title">@book.BookTitle</h5>
                                 <p class="card-text">
-                                    <strong>Author:</strong> @book.Author <br>
-                                    <strong>Publisher:</strong> @book.Publisher <br>
-                                    <strong>Borrow Price:</strong> $@book.BorrowPrice <br>
-                                    <strong>Buy Price:</strong> $@book.BuyPrice
+                                    <strong>Author:</strong> @book.Author<br>
+                                    <strong>Publisher:</strong> @book.Publisher<br>
+                                    <strong>Year of Publication:</strong> @book.YearOfPublication<br>
+                                    <strong>Genre:</strong> @book.Genre<br>
+                                    <strong>Age Restriction:</strong> @book.AgeRestriction<br>
+                                    <strong>Price for Borrow:</strong> @book.PriceForBorrow<br>
+                                    @if (book.DISCOUNTEDPriceForBorrow > 0)
+                                    {
+                                        <strong>Discounted Borrow Price:</strong> @book.DISCOUNTEDPriceForBorrow
+
+                                        <br>
+                                    }
+                                    <strong>Price for Buy:</strong> @book.PriceForBuy<br>
+                                    @if (book.DISCOUNTEDPriceForBuy > 0)
+                                    {
+                                        <strong>Discounted Buy Price:</strong> @book.DISCOUNTEDPriceForBuy
+
+                                        <br>
+                                    }
+                                    <strong>Formats:</strong>
+                                    @if (book.PDF)
+                                    {
+                                        <span>PDF </span>
+                                    }
+                                    @if (book.epub)
+                                    {
+                                        <span>EPUB </span>
+                                    }
+                                    @if (book.f2b)
+                                    {
+                                        <span>F2B </span>
+                                    }
+                                    @if (book.mobi)
+                                    {
+                                        <span>MOBI </span>
+                                    }
                                 </p>
-                                <a href="/HomePage/BookDetails/@book.Id" class="btn btn-primary">View Details</a>
+                                <a href="/HomePage/BookDetails?bookTitle=@Uri.EscapeDataString(book.BookTitle)&author=@Uri.EscapeDataString(book.Author)&publisher=@Uri.EscapeDataString(book.Publisher)&yearOfPublication=@book.YearOfPublication" class="btn btn-primary">View Details</a>
+
                             </div>
                         </div>
                     </div>

@@ -1,115 +1,72 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using LibraryApp.Models;
-
-
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using System.Reflection.Metadata.Ecma335;
-using System.Data;
-using LibraryApp.Models.ViewModel;
-
-
+using System.Collections.Generic;
 
 namespace LibraryApp.Controllers
 {
-	public class HomePageController : Controller
-	{
-		private readonly IConfiguration _configuration;
-		string connectionString;
-		public HomePageController(IConfiguration configuration)
-		{
-			_configuration = configuration;
-			connectionString = configuration.GetConnectionString("myConnect");
+    public class HomePageController : Controller
+    {
+        private readonly IConfiguration _configuration; 
+        private readonly string connectionString;
 
+        public HomePageController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+            connectionString = configuration.GetConnectionString("myConnect");
+        }
 
-		}
+        public IActionResult HomePage()
+        {
+            return View();
+        }
 
-		public IActionResult HomePage()
-		{
-			
-			return View();
-			
-		}
+        public IActionResult SignUp()
+        {
+            User newUser = new User();
+            return View("SignUp", newUser);
+        }
 
+        public IActionResult SubmitUser(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
 
-		public IActionResult SignUp()
-		{
-			User newUser = new User();
+                    string sqlQuery = "INSERT INTO Users_tbl (Status, FirstName, LastName, Email, Password) VALUES (@Status, @FirstName, @LastName, @Email, @Password)";
 
-			return View("SignUp", newUser);
-		}
+                    using (var command = new SqlCommand(sqlQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@Status", user.Status == "Admin" ? "PendingAdminApproval" : "User");
+                        command.Parameters.AddWithValue("@FirstName", user.FirstName);
+                        command.Parameters.AddWithValue("@LastName", user.LastName);
+                        command.Parameters.AddWithValue("@Email", user.email);
+                        command.Parameters.AddWithValue("@Password", user.Password);
 
-
-		public IActionResult SubmitUser(User user)
-		{
-			if (ModelState.IsValid)
-			{              
-
-                using (Microsoft.Data.SqlClient.SqlConnection connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
-				{
-					connection.Open();
-
-					string sqlQuery = "INSERT INTO Users_tbl VALUES (@Value1, @Value2, @Value3, @Value4, @Value5)";
-
-					using (Microsoft.Data.SqlClient.SqlCommand command = new Microsoft.Data.SqlClient.SqlCommand(sqlQuery, connection))
-					{
-
-
-                        if (user.Status == "Admin")
+                        int rowsAffected = command.ExecuteNonQuery();
+                        if (rowsAffected > 0)
                         {
-                            // Save the admin request as "PendingApproval"
-                            user.Status = "PendingAdminApproval";
-                        }
-                        else
-                            user.Status = "User";
-                        // Set the parameter values
-                        command.Parameters.AddWithValue("@Value1", user.Status);
-                        command.Parameters.AddWithValue("@Value2", user.FirstName);
-						command.Parameters.AddWithValue("@Value3", user.LastName);
-						command.Parameters.AddWithValue("@Value4", user.email);
-						command.Parameters.AddWithValue("@Value5", user.Password);
-
-						int rowsAffected = command.ExecuteNonQuery();
-						Console.WriteLine($"Rows affected: {rowsAffected}");
-
-						if (rowsAffected > 0)
-						{
                             if (user.Status == "PendingAdminApproval")
                             {
-                                return View("HomePage");
-                             
+                                TempData["SuccessMessage"] = "Admin request submitted successfully!";
                             }
-                            return View("HomePage", user);
-						}
-						else
-						{
-							return View("SignUp", user);
-						}
+                            return RedirectToAction("SignIn");
+                        }
+                    }
+                }
+            }
 
-					}
-
-				}
-
-			}
-			else
-				return View("SignUp", user);
-
-
-		}
-    
-
+            return View("SignUp", user);
+        }
 
         public IActionResult SignIn()
-		{
-			LogInModel user= new LogInModel();
-
+        {
             TempData["ErrorMessage"] = null;
-
-            return View("SignIn", user);
-
-		}
-
-
+            return View(new LogInModel());
+        }
 
         [HttpPost]
         public IActionResult Login(LogInModel model)
@@ -126,7 +83,7 @@ namespace LibraryApp.Controllers
 
                 if (status == "PendingAdminApproval")
                 {
-                    TempData["ErrorMessage"] = "Your request to become an admin is still pending approval. You will receive an update via email once it's reviewed.";
+                    TempData["ErrorMessage"] = "Your admin request is still pending approval.";
                     return View("SignIn", model);
                 }
 
@@ -136,269 +93,387 @@ namespace LibraryApp.Controllers
                     return RedirectToAction("ShowAdminPage", "Admin");
                 }
 
-                //if (status == "User")
-                //{
-                //    HttpContext.Session.SetString("CurrentUser", model.email);
-                //    return RedirectToAction("ShowBooks");
-                //}
-                else
+                if (status == "User")
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                    HttpContext.Session.SetString("CurrentUser", model.email);
+                    return RedirectToAction("ShowBooks");
                 }
             }
 
-            TempData["ErrorMessage"] = null;
+            TempData["ErrorMessage"] = "Invalid email or password.";
             return View("SignIn", model);
         }
 
+        public IActionResult ShowBooks(string searchQuery)
+        {
+            List<Book> books = new List<Book>();
 
-        //public IActionResult ShowBooks(string searchQuery)
-        //{
-        //    List<Book> books = new List<Book>();
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = string.IsNullOrEmpty(searchQuery)
+                    ? "SELECT * FROM Books"
+                    : "SELECT * FROM Books WHERE LOWER(BookTitle) LIKE @SearchQuery";
 
-        //    using (SqlConnection connection = new SqlConnection(connectionString))
-        //    {
-        //        connection.Open();
-        //        string query;
+                using (var command = new SqlCommand(query, connection))
+                {
+                    if (!string.IsNullOrEmpty(searchQuery))
+                    {
+                        command.Parameters.AddWithValue("@SearchQuery", $"%{searchQuery.ToLower()}%");
+                    }
 
-        //        if (string.IsNullOrEmpty(searchQuery))
-        //        {
-        //            query = "SELECT * FROM Books"; // שלוף את כל הספרים אם אין חיפוש
-        //        }
-        //        else
-        //        {
-        //            // הפוך את השאילתה ללא תלויה באותיות קטנות/גדולות
-        //            query = "SELECT * FROM Books WHERE LOWER(Title) LIKE LOWER(@SearchQuery)";
-        //        }
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            books.Add(new Book
+                            {
+                                BookTitle = reader.GetString(0),
+                                Author = reader.GetString(1),
+                                Publisher = reader.GetString(2),
+                                YearOfPublication = reader.GetInt32(3),
+                                Genre = reader.GetString(4),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                PriceForBorrow = reader.GetDecimal(7),
+                                PriceForBuy = reader.GetDecimal(8),
+                                AgeRestriction = reader.GetString(9),
+                                IsOnSale = reader.GetBoolean(10),
+                                PDF = reader.GetBoolean(11),
+                                epub = reader.GetBoolean(12),
+                                f2b = reader.GetBoolean(13),
+                                mobi = reader.GetBoolean(14),
+                                Popularity = reader.GetInt32(15),
+                                ImageUrl = reader.GetString(16)
+                            });
+                        }
+                    }
+                }
+            }
 
-        //        using (SqlCommand command = new SqlCommand(query, connection))
-        //        {
-        //            if (!string.IsNullOrEmpty(searchQuery))
-        //            {
-        //                command.Parameters.AddWithValue("@SearchQuery", "%" + searchQuery.ToLower() + "%");
-        //            }
+            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+            ViewBag.SearchQuery = searchQuery;
 
-        //            using (SqlDataReader reader = command.ExecuteReader())
-        //            {
-        //                while (reader.Read())
-        //                {
-        //                    books.Add(new Book
-        //                    {
-        //                        Id = reader.GetInt32(0),
-        //                        Title = reader.GetString(1),
-        //                        Author = reader.GetString(2),
-        //                        Publisher = reader.GetString(3),
-        //                        BorrowPrice = reader.GetDecimal(4),
-        //                        BuyPrice = reader.GetDecimal(5),
-        //                        AvailableCopies = reader.GetInt32(6),
-        //                        ImageUrl = reader.GetString(7)
-        //                    });
-        //                }
-        //            }
-        //        }
-        //        connection.Close();
-        //    }
-
-        //    ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
-        //    ViewBag.SearchQuery = searchQuery;
-
-        //    return View("UserPageUpdated", books);
-        //}
-
-
-
-
-
+            return View("UserPageUpdated", books);
+        }
 
         private string IsUserValid(string email, string password)
-		{
-		
-			// שאילתה לבדיקת אימייל וסיסמה
-			string query = "SELECT Status FROM Users_tbl WHERE email = @email AND Password = @Password ";
+        {
+            string query = "SELECT Status FROM Users_tbl WHERE email = @Email AND Password = @Password";
 
-			using (SqlConnection connection = new SqlConnection(connectionString))
-			{
-				using (SqlCommand command = new SqlCommand(query, connection))
-				{
-					// הוספת פרמטרים כדי למנוע SQL Injection
-					command.Parameters.AddWithValue("@email", email);
-					command.Parameters.AddWithValue("@Password", password);
+            using (var connection = new SqlConnection(connectionString))
+            {
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Email", email);
+                    command.Parameters.AddWithValue("@Password", password);
 
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return reader["Status"].ToString();
+                        }
+                    }
+                }
+            }
 
-					connection.Open();
+            return "NonExistent";
+        }
 
-					using (SqlDataReader reader = command.ExecuteReader())
-					{
-						if (reader.Read())
-						{
-							string status = reader["Status"].ToString(); 
-							if (status == "PendingAdminApproval")
-								return "StillPendingAdminApproval";
+        public IActionResult BookDetails(string bookTitle, string author, string publisher, int yearOfPublication)
+        {
+            Book book = null;
 
-                            if (status == "SuperAdmin" || status == "Admin")
-                                return "Admin";
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
 
-                            return "User";
-						}
+                // שאילתה לשימוש במפתח הראשי המשולב
+                string query = @"
+            SELECT * 
+            FROM Books 
+            WHERE BookTitle = @BookTitle 
+              AND Author = @Author 
+              AND Publisher = @Publisher 
+              AND YearOfPublication = @YearOfPublication";
 
-                       
-					}
-                    				    
-				}
-			}
+                using (var command = new SqlCommand(query, connection))
+                {
+                    // הוספת הפרמטרים
+                    command.Parameters.AddWithValue("@BookTitle", bookTitle);
+                    command.Parameters.AddWithValue("@Author", author);
+                    command.Parameters.AddWithValue("@Publisher", publisher);
+                    command.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
 
-			return "NonExistent";
-		}
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            book = new Book
+                            {
+                                BookTitle = reader.GetString(0),
+                                Author = reader.GetString(1),
+                                Publisher = reader.GetString(2),
+                                YearOfPublication = reader.GetInt32(3),
+                                Genre = reader.GetString(4),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                PriceForBorrow = reader.GetDecimal(7),
+                                PriceForBuy = reader.GetDecimal(8),
+                                AgeRestriction = reader.GetString(9),
+                                IsOnSale = reader.GetBoolean(10),
+                                PDF = reader.GetBoolean(11),
+                                epub = reader.GetBoolean(12),
+                                f2b = reader.GetBoolean(13),
+                                mobi = reader.GetBoolean(14),
+                                Popularity = reader.GetInt32(15),
+                                ImageUrl = reader.GetString(16)
+                            };
+                        }
+                    }
+                }
+            }
 
+            if (book == null)
+            {
+                return NotFound(); // אם הספר לא נמצא
+            }
 
+            return View(book);
+        }
 
+        [HttpGet]
+        public IActionResult SearchBooks(string searchQuery)
+        {
+            List<Book> books = new List<Book>();
 
-		public IActionResult UserPage()
-		{
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = @"
+            SELECT * 
+            FROM Books 
+            WHERE 
+                LOWER(BookTitle) LIKE LOWER(@SearchQuery) OR 
+                LOWER(Author) LIKE LOWER(@SearchQuery) OR 
+                LOWER(Publisher) LIKE LOWER(@SearchQuery)";
 
-			return View();
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@SearchQuery", $"%{searchQuery}%");
 
-		}
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            books.Add(new Book
+                            {
+                                BookTitle = reader.GetString(0),
+                                Author = reader.GetString(1),
+                                Publisher = reader.GetString(2),
+                                YearOfPublication = reader.GetInt32(3),
+                                Genre = reader.GetString(4),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                PriceForBorrow = reader.GetDecimal(7),
+                                PriceForBuy = reader.GetDecimal(8),
+                                AgeRestriction = reader.GetString(9),
+                                IsOnSale = reader.GetBoolean(10),
+                                PDF = reader.GetBoolean(11),
+                                epub = reader.GetBoolean(12),
+                                f2b = reader.GetBoolean(13),
+                                mobi = reader.GetBoolean(14),
+                                Popularity = reader.GetInt32(15),
+                                ImageUrl = reader.GetString(16)
+                            });
+                        }
+                    }
+                }
+            }
 
+            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+            ViewBag.SearchQuery = searchQuery;
 
-        //public IActionResult BookDetails(int id)
-        //{
-        //    Book book = null;
-
-        //    using (SqlConnection connection = new SqlConnection(connectionString))
-        //    {
-        //        connection.Open();
-        //        string query = "SELECT * FROM Books WHERE Id = @BookId";
-
-        //        using (SqlCommand command = new SqlCommand(query, connection))
-        //        {
-        //            command.Parameters.AddWithValue("@BookId", id);
-
-        //            using (SqlDataReader reader = command.ExecuteReader())
-        //            {
-        //                if (reader.Read())
-        //                {
-        //                    book = new Book
-        //                    {
-        //                        Id = reader.GetInt32(0),
-        //                        Title = reader.GetString(1),
-        //                        Author = reader.GetString(2),
-        //                        Publisher = reader.GetString(3),
-        //                        BorrowPrice = reader.GetDecimal(4),
-        //                        BuyPrice = reader.GetDecimal(5),
-        //                        AvailableCopies = reader.GetInt32(6),
-        //                        ImageUrl = reader.GetString(7)
-        //                    };
-        //                }
-        //            }
-        //        }
-        //        connection.Close();
-        //    }
-
-        //    if (book == null)
-        //    {
-        //        return NotFound(); // אם הספר לא נמצא
-        //    }
-
-        //    return View(book);
-        //}
-
-
-        //[HttpPost]
-        //public IActionResult BorrowBook(int bookId)
-        //{
-        //    string currentUser = HttpContext.Session.GetString("CurrentUser");
-
-        //    if (string.IsNullOrEmpty(currentUser))
-        //    {
-        //        TempData["ErrorMessage"] = "You need to log in to borrow books.";
-        //        return RedirectToAction("SignIn");
-        //    }
-
-        //    using (SqlConnection connection = new SqlConnection(connectionString))
-        //    {
-        //        connection.Open();
-
-        //        // בדיקה כמה ספרים כבר מושאלים על ידי המשתמש
-        //        string countQuery = "SELECT COUNT(*) FROM BorrowedBooks WHERE UserEmail = @UserEmail";
-        //        using (SqlCommand countCommand = new SqlCommand(countQuery, connection))
-        //        {
-        //            countCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-
-        //            int borrowedCount = (int)countCommand.ExecuteScalar();
-
-        //            if (borrowedCount >= 3)
-        //            {
-        //                TempData["ErrorMessage"] = "You can only borrow up to 3 books.";
-        //                return RedirectToAction("BookDetails", new { id = bookId });
-        //            }
-        //        }
-
-        //        // בדיקה אם הספר זמין
-        //        string availabilityQuery = "SELECT AvailableCopies FROM Books WHERE Id = @BookId";
-        //        using (SqlCommand availabilityCommand = new SqlCommand(availabilityQuery, connection))
-        //        {
-        //            availabilityCommand.Parameters.AddWithValue("@BookId", bookId);
-        //            int availableCopies = (int)availabilityCommand.ExecuteScalar();
-
-        //            if (availableCopies <= 0)
-        //            {
-        //                TempData["ErrorMessage"] = "This book is currently not available.";
-        //                return RedirectToAction("BookDetails", new { id = bookId });
-        //            }
-        //        }
-
-        //        // הוספת הרשומה לטבלת ההשאלות
-        //        string borrowQuery = "INSERT INTO BorrowedBooks (UserEmail, BookId, BorrowDate) VALUES (@UserEmail, @BookId, GETDATE())";
-        //        using (SqlCommand borrowCommand = new SqlCommand(borrowQuery, connection))
-        //        {
-        //            borrowCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-        //            borrowCommand.Parameters.AddWithValue("@BookId", bookId);
-        //            borrowCommand.ExecuteNonQuery();
-        //        }
-
-        //        // עדכון עותקים זמינים
-        //        string updateQuery = "UPDATE Books SET AvailableCopies = AvailableCopies - 1 WHERE Id = @BookId";
-        //        using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
-        //        {
-        //            updateCommand.Parameters.AddWithValue("@BookId", bookId);
-        //            updateCommand.ExecuteNonQuery();
-        //        }
-        //    }
-
-        //    TempData["SuccessMessage"] = "Book borrowed successfully!";
-        //    return RedirectToAction("BookDetails", new { id = bookId });
-        //}
+            return View("UserPageUpdated", books);
+        }
 
 
-        //[HttpPost]
-        //public IActionResult PurchaseBook(int bookId)
-        //{
-        //    string currentUser = HttpContext.Session.GetString("CurrentUser");
 
-        //    if (string.IsNullOrEmpty(currentUser))
-        //    {
-        //        TempData["ErrorMessage"] = "You need to log in to purchase books.";
-        //        return RedirectToAction("SignIn");
-        //    }
+        public IActionResult SortBooks(string sortOption)
+        {
+            List<Book> books = new List<Book>();
 
-        //    using (SqlConnection connection = new SqlConnection(connectionString))
-        //    {
-        //        connection.Open();
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT * FROM Books";
 
-        //        // הוספת רכישה לטבלה
-        //        string purchaseQuery = "INSERT INTO PurchasedBooks (UserEmail, BookId, PurchaseDate) VALUES (@UserEmail, @BookId, GETDATE())";
-        //        using (SqlCommand purchaseCommand = new SqlCommand(purchaseQuery, connection))
-        //        {
-        //            purchaseCommand.Parameters.AddWithValue("@UserEmail", currentUser);
-        //            purchaseCommand.Parameters.AddWithValue("@BookId", bookId);
-        //            purchaseCommand.ExecuteNonQuery();
-        //        }
-        //    }
+                // הוספת מיון בהתאם לאופציה שנבחרה
+                switch (sortOption)
+                {
+                    case "priceLowToHigh":
+                        query += " ORDER BY PriceForBuy ASC";
+                        break;
+                    case "priceHighToLow":
+                        query += " ORDER BY PriceForBuy DESC";
+                        break;
+                    case "popularity":
+                        query += " ORDER BY Popularity DESC";
+                        break;
+                    case "genre":
+                        query += " ORDER BY Genre ASC";
+                        break;
+                    case "year":
+                        query += " ORDER BY YearOfPublication DESC";
+                        break;
+                }
 
-        //    TempData["SuccessMessage"] = "Book purchased successfully!";
-        //    return RedirectToAction("BookDetails", new { id = bookId });
-        //}
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            books.Add(new Book
+                            {
+                                BookTitle = reader.GetString(0),
+                                Author = reader.GetString(1),
+                                Publisher = reader.GetString(2),
+                                YearOfPublication = reader.GetInt32(3),
+                                Genre = reader.GetString(4),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                PriceForBorrow = reader.GetDecimal(7),
+                                PriceForBuy = reader.GetDecimal(8),
+                                AgeRestriction = reader.GetString(9),
+                                IsOnSale = reader.GetBoolean(10),
+                                PDF = reader.GetBoolean(11),
+                                epub = reader.GetBoolean(12),
+                                f2b = reader.GetBoolean(13),
+                                mobi = reader.GetBoolean(14),
+                                Popularity = reader.GetInt32(15),
+                                ImageUrl = reader.GetString(16)
+                            });
+                        }
+                    }
+                }
+            }
+
+            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+            ViewBag.SortOption = sortOption;
+
+            return View("UserPageUpdated", books);
+        }
+
+
+
+        public IActionResult FilterBooks(string author, string genre, decimal? minPrice, decimal? maxPrice, string onSale, string availability)
+        {
+            List<Book> books = new List<Book>();
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT * FROM Books WHERE 1=1";
+
+                // Add filters
+                if (!string.IsNullOrEmpty(author))
+                {
+                    query += " AND LOWER(Author) LIKE LOWER(@Author)";
+                }
+                if (!string.IsNullOrEmpty(genre))
+                {
+                    query += " AND LOWER(Genre) LIKE LOWER(@Genre)";
+                }
+                if (minPrice.HasValue)
+                {
+                    query += " AND PriceForBuy >= @MinPrice";
+                }
+                if (maxPrice.HasValue)
+                {
+                    query += " AND PriceForBuy <= @MaxPrice";
+                }
+                if (!string.IsNullOrEmpty(onSale))
+                {
+                    query += " AND IsOnSale = @OnSale";
+                }
+                if (!string.IsNullOrEmpty(availability))
+                {
+                    if (availability == "borrow")
+                    {
+                        query += " AND PriceForBorrow > 0";
+                    }
+                    else if (availability == "buy")
+                    {
+                        query += " AND PriceForBuy > 0";
+                    }
+                }
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    // Add parameters
+                    if (!string.IsNullOrEmpty(author))
+                    {
+                        command.Parameters.AddWithValue("@Author", $"%{author}%");
+                    }
+                    if (!string.IsNullOrEmpty(genre))
+                    {
+                        command.Parameters.AddWithValue("@Genre", $"%{genre}%");
+                    }
+                    if (minPrice.HasValue)
+                    {
+                        command.Parameters.AddWithValue("@MinPrice", minPrice.Value);
+                    }
+                    if (maxPrice.HasValue)
+                    {
+                        command.Parameters.AddWithValue("@MaxPrice", maxPrice.Value);
+                    }
+                    if (!string.IsNullOrEmpty(onSale))
+                    {
+                        command.Parameters.AddWithValue("@OnSale", onSale.ToLower() == "true");
+                    }
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            books.Add(new Book
+                            {
+                                BookTitle = reader.GetString(0),
+                                Author = reader.GetString(1),
+                                Publisher = reader.GetString(2),
+                                YearOfPublication = reader.GetInt32(3),
+                                Genre = reader.GetString(4),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                PriceForBorrow = reader.GetDecimal(7),
+                                PriceForBuy = reader.GetDecimal(8),
+                                AgeRestriction = reader.GetString(9),
+                                IsOnSale = reader.GetBoolean(10),
+                                PDF = reader.GetBoolean(11),
+                                epub = reader.GetBoolean(12),
+                                f2b = reader.GetBoolean(13),
+                                mobi = reader.GetBoolean(14),
+                                Popularity = reader.GetInt32(15),
+                                ImageUrl = reader.GetString(16)
+                            });
+                        }
+                    }
+                }
+            }
+
+            ViewBag.Author = author;
+            ViewBag.Genre = genre;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.OnSale = onSale;
+            ViewBag.Availability = availability;
+
+            return View("UserPageUpdated", books);
+        }
+
 
 
 
