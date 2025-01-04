@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Add Feedback";
+}
+
+<h2>Add Feedback for @ViewBag.BookTitle</h2>
+
+<form method="post" action="/PersonalLibrary/SubmitFeedback">
+    <input type="hidden" name="bookTitle" value="@ViewBag.BookTitle" />
+    <input type="hidden" name="author" value="@ViewBag.Author" />
+    <input type="hidden" name="publisher" value="@ViewBag.Publisher" />
+    <input type="hidden" name="yearOfPublication" value="@ViewBag.YearOfPublication" />
+
+    <div class="mb-3">
+        <label for="rating" class="form-label">Rating (1 to 5)</label>
+        <select name="rating" id="rating" class="form-select" required>
+            <option value="">Select Rating</option>
+            @for (int i = 1; i <= 5; i++)
+            {
+                <option value="@i">@i</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="feedback" class="form-label">Feedback</label>
+        <textarea name="feedback" id="feedback" class="form-control" rows="4" placeholder="Write your feedback here..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Feedback</button>
+</form>

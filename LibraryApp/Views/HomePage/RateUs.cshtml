@@ -1,0 +1,28 @@
+﻿@{
+    ViewBag.Title = "Rate Us";
+}
+
+<div class="container py-5">
+    <h2 class="text-primary text-center">We value your feedback!</h2>
+
+    <form method="post" action="/HomePage/AddServiceFeedback">
+        <div class="mb-3">
+            <label for="rating" class="form-label">Rate our service (1-5):</label>
+            <select name="rating" id="rating" class="form-select" required>
+                <option value="">Select a rating...</option>
+                <option value="1">1 - Very Poor</option>
+                <option value="2">2 - Poor</option>
+                <option value="3">3 - Average</option>
+                <option value="4">4 - Good</option>
+                <option value="5">5 - Excellent</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="feedback" class="form-label">Your feedback (optional):</label>
+            <textarea name="feedback" id="feedback" class="form-control" rows="4"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Feedback</button>
+    </form>
+</div>

@@ -199,9 +199,15 @@ namespace LibraryApp.Controllers
                 }
             }
 
+            // טוען את רשימות הסופרים והז'אנרים
+            ViewBag.AllAuthors = GetAllAuthorsFromDatabase();
+            ViewBag.AllGenres = GetAllGenresFromDatabase();
+
             ViewBag.UserName = HttpContext.Session.GetString("Current user name");
            
             ViewBag.SearchQuery = searchQuery;
+
+            
 
             return View("UserPageUpdated", books);
         }
@@ -234,23 +240,23 @@ namespace LibraryApp.Controllers
         public IActionResult BookDetails(string bookTitle, string author, string publisher, int yearOfPublication)
         {
             Book book = null;
+            List<Feedback> feedbacks = new List<Feedback>();
 
             using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                // שאילתה לשימוש במפתח הראשי המשולב
-                string query = @"
-            SELECT * 
-            FROM Books 
-            WHERE BookTitle = @BookTitle 
-              AND Author = @Author 
-              AND Publisher = @Publisher 
-              AND YearOfPublication = @YearOfPublication";
+                // שאילתה לשליפת פרטי הספר
+                string bookQuery = @"
+        SELECT * 
+        FROM Books 
+        WHERE BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
 
-                using (var command = new SqlCommand(query, connection))
+                using (var command = new SqlCommand(bookQuery, connection))
                 {
-                    // הוספת הפרמטרים
                     command.Parameters.AddWithValue("@BookTitle", bookTitle);
                     command.Parameters.AddWithValue("@Author", author);
                     command.Parameters.AddWithValue("@Publisher", publisher);
@@ -262,7 +268,6 @@ namespace LibraryApp.Controllers
                         {
                             book = new Book
                             {
-
                                 BookTitle = reader.GetString(0),
                                 Author = reader.GetString(1),
                                 Publisher = reader.GetString(2),
@@ -274,7 +279,6 @@ namespace LibraryApp.Controllers
                                 PriceForBuy = reader.GetDecimal(8),
                                 AgeRestriction = reader.GetString(9),
                                 IsOnSale = reader.GetBoolean(10),
-
                                 PDF = reader.GetBoolean(14),
                                 epub = reader.GetBoolean(15),
                                 f2b = reader.GetBoolean(16),
@@ -286,15 +290,49 @@ namespace LibraryApp.Controllers
                         }
                     }
                 }
+
+                if (book == null)
+                {
+                    return NotFound(); // אם הספר לא נמצא
+                }
+
+                // שאילתה לשליפת הפידבקים לספר
+                string feedbackQuery = @"
+        SELECT UserName, Rating, Feedback AS Comment, FeedbackDate 
+        FROM BookFeedback 
+        WHERE BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
+
+                using (var feedbackCommand = new SqlCommand(feedbackQuery, connection))
+                {
+                    feedbackCommand.Parameters.AddWithValue("@BookTitle", bookTitle);
+                    feedbackCommand.Parameters.AddWithValue("@Author", author);
+                    feedbackCommand.Parameters.AddWithValue("@Publisher", publisher);
+                    feedbackCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+
+                    using (var feedbackReader = feedbackCommand.ExecuteReader())
+                    {
+                        while (feedbackReader.Read())
+                        {
+                            feedbacks.Add(new Feedback
+                            {
+                                UserName = feedbackReader.GetString(0),
+                                Rating = feedbackReader.GetInt32(1),
+                                Comment = feedbackReader.GetString(2),
+                                FeedbackDate = feedbackReader.GetDateTime(3)
+                            });
+                        }
+                    }
+                }
             }
 
-            if (book == null)
-            {
-                return NotFound(); // אם הספר לא נמצא
-            }
-
+            // העברת הספר והפידבקים ל-View
+            ViewBag.Feedbacks = feedbacks;
             return View(book);
         }
+
 
         [HttpGet]
         public IActionResult SearchBooks(string searchQuery)
@@ -429,7 +467,7 @@ namespace LibraryApp.Controllers
 
 
 
-        public IActionResult FilterBooks(string author, string genre, decimal? minPrice, decimal? maxPrice, string onSale, string availability)
+        public IActionResult FilterBooks(List<string> authors, List<string> genres, decimal? minPrice, decimal? maxPrice, string onSale, string availability, List<string> method)
         {
             List<Book> books = new List<Book>();
 
@@ -438,15 +476,19 @@ namespace LibraryApp.Controllers
                 connection.Open();
                 string query = "SELECT * FROM Books WHERE 1=1";
 
-                // Add filters
-                if (!string.IsNullOrEmpty(author))
+                // סינון לפי סופרים
+                if (authors != null && authors.Count > 0)
                 {
-                    query += " AND LOWER(Author) LIKE LOWER(@Author)";
+                    query += " AND Author IN (" + string.Join(",", authors.Select(a => $"'{a}'")) + ")";
                 }
-                if (!string.IsNullOrEmpty(genre))
+
+                // סינון לפי ז'אנרים
+                if (genres != null && genres.Count > 0)
                 {
-                    query += " AND LOWER(Genre) LIKE LOWER(@Genre)";
+                    query += " AND Genre IN (" + string.Join(",", genres.Select(g => $"'{g}'")) + ")";
                 }
+
+                // סינון לפי מחיר
                 if (minPrice.HasValue)
                 {
                     query += " AND PriceForBuy >= @MinPrice";
@@ -455,33 +497,42 @@ namespace LibraryApp.Controllers
                 {
                     query += " AND PriceForBuy <= @MaxPrice";
                 }
-                if (!string.IsNullOrEmpty(onSale))
+
+                // סינון לפי הנחה
+                if (!string.IsNullOrEmpty(onSale) && onSale == "true")
                 {
-                    query += " AND IsOnSale = @OnSale";
+                    query += " AND (DISCOUNTEDPriceForBuy > 0 OR DISCOUNTEDPriceForBorrow > 0)";
                 }
-                if (!string.IsNullOrEmpty(availability))
+
+
+
+                // סינון לפי שיטה (קנייה או השאלה)
+                if (method != null && method.Any(m => !string.IsNullOrWhiteSpace(m)))
                 {
-                    if (availability == "borrow")
+
+                    List<string> methodConditions = new List<string>();
+
+                    if (method.Contains("buy"))
                     {
-                        query += " AND PriceForBorrow > 0";
+                        methodConditions.Add("PriceForBuy > 0");
                     }
-                    else if (availability == "buy")
+                    if (method.Contains("borrow"))
                     {
-                        query += " AND PriceForBuy > 0";
+                        methodConditions.Add("PriceForBorrow > 0 AND AvailableAmountOfCopiesToBorrow > 0");
+                    }
+
+                    if (methodConditions.Count > 0)
+                    {
+                        query += " AND (" + string.Join(" OR ", methodConditions) + ")";
                     }
                 }
+                
+
+
+
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    // Add parameters
-                    if (!string.IsNullOrEmpty(author))
-                    {
-                        command.Parameters.AddWithValue("@Author", $"%{author}%");
-                    }
-                    if (!string.IsNullOrEmpty(genre))
-                    {
-                        command.Parameters.AddWithValue("@Genre", $"%{genre}%");
-                    }
                     if (minPrice.HasValue)
                     {
                         command.Parameters.AddWithValue("@MinPrice", minPrice.Value);
@@ -497,44 +548,187 @@ namespace LibraryApp.Controllers
 
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
-                        while (reader.Read())
-                        {
-                            books.Add(new Book
+                        
+                            while (reader.Read())
                             {
+                                books.Add(new Book
+                                {
+                                    BookTitle = reader.GetString(0),
+                                    Author = reader.GetString(1),
+                                    Publisher = reader.GetString(2),
+                                    YearOfPublication = reader.GetInt32(3),
+                                    Genre = reader.GetString(4),
+                                    DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
+                                    DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
+                                    PriceForBorrow = reader.GetDecimal(7),
+                                    PriceForBuy = reader.GetDecimal(8),
+                                    AgeRestriction = reader.GetString(9),
+                                    IsOnSale = reader.IsDBNull(10) ? false : reader.GetBoolean(10),
+                                    PDF = reader.IsDBNull(14) ? false : reader.GetBoolean(14),
+                                    epub = reader.IsDBNull(15) ? false : reader.GetBoolean(15),
+                                    f2b = reader.IsDBNull(16) ? false : reader.GetBoolean(16),
+                                    mobi = reader.IsDBNull(17) ? false : reader.GetBoolean(17),
 
-                                BookTitle = reader.GetString(0),
-                                Author = reader.GetString(1),
-                                Publisher = reader.GetString(2),
-                                YearOfPublication = reader.GetInt32(3),
-                                Genre = reader.GetString(4),
-                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                PriceForBorrow = reader.GetDecimal(7),
-                                PriceForBuy = reader.GetDecimal(8),
-                                AgeRestriction = reader.GetString(9),
-                                IsOnSale = reader.GetBoolean(10),
+                                    Popularity = reader.GetInt32(18),
+                                    ImageUrl = reader.GetString(19),
+                                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
+                                });
+                            }
+                        
+                       
 
-                                PDF = reader.GetBoolean(14),
-                                epub = reader.GetBoolean(15),
-                                f2b = reader.GetBoolean(16),
-                                mobi = reader.GetBoolean(17),
-                                Popularity = reader.GetInt32(18),
-                                ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
-                            });
-                        }
                     }
                 }
             }
 
-            ViewBag.Author = author;
-            ViewBag.Genre = genre;
+            // טוען מחדש את כל הסופרים והז'אנרים
+            ViewBag.AllAuthors = GetAllAuthorsFromDatabase();
+            ViewBag.AllGenres = GetAllGenresFromDatabase();
+
+            // מעביר את ערכי הסינון ל-ViewBag כדי לשמר את הבחירות של המשתמש
+            ViewBag.Authors = authors;
+            ViewBag.Genres = genres;
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
             ViewBag.OnSale = onSale;
             ViewBag.Availability = availability;
+            ViewBag.Method = method;
 
             return View("UserPageUpdated", books);
+        }
+
+
+        private List<string> GetAllAuthorsFromDatabase()
+        {
+            List<string> authors = new List<string>();
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT DISTINCT Author FROM Books";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            authors.Add(reader.GetString(0));
+                        }
+                    }
+                }
+            }
+            return authors;
+        }
+
+        private List<string> GetAllGenresFromDatabase()
+        {
+            List<string> genres = new List<string>();
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT DISTINCT Genre FROM Books";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            genres.Add(reader.GetString(0));
+                        }
+                    }
+                }
+            }
+            return genres;
+        }
+
+
+
+        [HttpPost]
+        public IActionResult AddServiceFeedback(int rating, string feedback)
+        {
+            string userName = HttpContext.Session.GetString("Current user name");
+
+            if (string.IsNullOrEmpty(userName))
+            {
+                TempData["ErrorMessage"] = "You must be logged in to leave feedback.";
+                return RedirectToAction("SignIn", "HomePage");
+            }
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string query = @"
+            INSERT INTO ServiceFeedback (UserName, Rating, Feedback, FeedbackDate) 
+            VALUES (@UserName, @Rating, @Feedback, GETDATE())";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@UserName", userName);
+                    command.Parameters.AddWithValue("@Rating", rating);
+                    command.Parameters.AddWithValue("@Feedback", feedback ?? (object)DBNull.Value);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected > 0)
+                    {
+                        TempData["SuccessMessage"] = "Thank you for your feedback!";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Failed to submit feedback. Please try again.";
+                    }
+                }
+            }
+
+            return RedirectToAction("ShowBooks", "HomePage");
+        }
+
+
+
+        public List<(string UserName, int Rating, string Feedback, DateTime FeedbackDate)> GetServiceFeedbacks()
+        {
+            List<(string, int, string, DateTime)> feedbacks = new List<(string, int, string, DateTime)>();
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                string query = "SELECT UserName, Rating, Feedback, FeedbackDate FROM ServiceFeedback ORDER BY FeedbackDate DESC";
+
+                using (var command = new SqlCommand(query, connection))
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        feedbacks.Add((
+                            reader.GetString(0),     // UserName
+                            reader.GetInt32(1),      // Rating
+                            reader.IsDBNull(2) ? "" : reader.GetString(2),  // Feedback
+                            reader.GetDateTime(3)    // FeedbackDate
+                        ));
+                    }
+                }
+            }
+
+            return feedbacks;
+        }
+
+
+        // פעולה שתציג את טופס הפידבק והרייטינג
+        public IActionResult RateUs()
+        {
+            return View("RateUs"); // יצירת View בשם "RateUs"
+        }
+
+
+        public IActionResult feedbacksAboutUs()
+        {
+
+            // שליפת הפידבקים מבסיס הנתונים
+            var feedbacks = GetServiceFeedbacks();
+
+            // העברת הפידבקים ל-ViewBag כדי להציג אותם ב-View
+            ViewBag.ServiceFeedbacks = feedbacks;
+
+            return View("feedbacksAboutUs"); 
         }
 
 

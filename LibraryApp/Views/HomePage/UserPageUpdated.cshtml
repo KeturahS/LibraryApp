@@ -1,10 +1,15 @@
-﻿<div class="container py-5">
+﻿
 
+<div class="container py-5">
     <!-- Header Section -->
     <div class="text-center mb-5">
         <h1 class="display-4 text-primary">
             Welcome <strong>@ViewBag.UserName</strong> to eBook
         </h1>
+
+        
+
+
 
         <!-- Search Section -->
         <div class="mb-4">
@@ -19,15 +24,9 @@
                 </div>
             </form>
         </div>
-
-        <!-- Cart Button -->
-        <div class="mt-4">
-            <a href="/Cart/Index" class="btn btn-warning btn-lg">
-                <i class="bi bi-cart"></i> Go to Cart
-            </a>
-        </div>
     </div>
-    <!-- order Button -->
+
+        <!-- order Button -->
     <div class="mb-4">
         <form method="get" action="/HomePage/SortBooks">
             <div class="input-group">
@@ -40,7 +39,6 @@
                     <option value="year">Year of Publication</option>
                 </select>
                 <button class="btn btn-primary" type="submit">Sort</button>
-
                 <h2>Book Catalog</h2>
                 @if (!string.IsNullOrEmpty(ViewBag.SortOption))
                 {
@@ -51,71 +49,103 @@
         </form>
     </div>
 
-    <!-- filter Button -->
+
+    <!-- Filter Button -->
     <div class="mb-4">
-        <form method="get" action="/HomePage/FilterBooks">
-            <div class="row g-3">
-                <!-- Filter by Author -->
-                <div class="col-md-3">
-                    <input type="text"
-                           name="author"
-                           class="form-control"
-                           placeholder="Filter by Author"
-                           value="@ViewBag.Author">
-                </div>
+        <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection" aria-expanded="false">
+            Show Filters
+        </button>
 
-                <!-- Filter by Genre -->
-                <div class="col-md-3">
-                    <input type="text"
-                           name="genre"
-                           class="form-control"
-                           placeholder="Filter by Genre"
-                           value="@ViewBag.Genre">
-                </div>
+        <div class="collapse mt-3" id="filterSection">
+            <form method="get" action="/HomePage/FilterBooks">
+                <div class="row g-3">
+                    <!-- Filter by Author -->
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Author</label>
+                        <div class="form-check">
+                            @if (ViewBag.AllAuthors != null && ((List<string>)ViewBag.AllAuthors).Any())
+                            {
+                                @foreach (var author in (List<string>)ViewBag.AllAuthors)
+                                {
+                                    <input type="checkbox" name="authors" value="@author" class="form-check-input" id="@author" />
+                                    <label class="form-check-label" for="@author">@author</label>
 
-                <!-- Filter by Price Range -->
-                <div class="col-md-3">
-                    <input type="number"
-                           name="minPrice"
-                           class="form-control"
-                           placeholder="Min Price"
-                           value="@ViewBag.MinPrice">
-                </div>
-                <div class="col-md-3">
-                    <input type="number"
-                           name="maxPrice"
-                           class="form-control"
-                           placeholder="Max Price"
-                           value="@ViewBag.MaxPrice">
-                </div>
+                                    <br />
+                                }
+                            }
+                            else
+                            {
+                                <p>No authors available.</p>
+                            }
+                        </div>
+                    </div>
 
-                <!-- Filter by Sale -->
-                <div class="col-md-3">
-                    <select name="onSale" class="form-select">
-                        <option value="">Discounted Books</option>
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                    </select>
-                </div>
+                    <!-- Filter by Genre -->
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Genre</label>
+                        <div class="form-check">
+                            @if (ViewBag.AllGenres != null && ((List<string>)ViewBag.AllGenres).Any())
+                            {
+                            @foreach (var genre in (List<string>)ViewBag.AllGenres)
+                            {
+                                <input type="checkbox" name="genres" value="@genre" class="form-check-input" id="@genre">
+                                <label class="form-check-label" for="@genre">@genre</label><br />
+                            }
+                            }
+                            else
+                            {
+                                <p>No genres available.</p>
+                            }
+                        </div>
+                    </div>
 
-                <!-- Filter by Availability -->
-                <div class="col-md-3">
-                    <select name="availability" class="form-select">
-                        <option value="">Filter by Availability</option>
-                        <option value="borrow">Borrow</option>
-                        <option value="buy">Buy</option>
-                    </select>
-                </div>
+                    <!-- Filter by Price Range -->
+                    <div class="col-md-3">
+                        <label class="form-label">Min Price</label>
+                        <input type="number" name="minPrice" class="form-control" placeholder="Min Price" value="@ViewBag.MinPrice">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Max Price</label>
+                        <input type="number" name="maxPrice" class="form-control" placeholder="Max Price" value="@ViewBag.MaxPrice">
+                    </div>
 
-                <!-- Submit Button -->
-                <div class="col-md-3">
-                    <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+                    <!-- Filter by Sale -->
+                    <div class="col-md-3">
+                        <label class="form-label">Show Discounted Books Only</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="onSale" name="onSale" value="true"
+                            @(ViewBag.OnSale == "true" ? "checked" : "")>
+                            <label class="form-check-label" for="onSale">On Sale</label>
+                        </div>
+                    </div>
+
+
+                    <!-- Filter by Method -->
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Method</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="buy" name="method" value="buy"
+                            @(ViewBag.Method != null && ((List<string>)ViewBag.Method).Contains("buy") ? "checked" : "")>
+                            <label class="form-check-label" for="buy">Buy</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="borrow" name="method" value="borrow"
+                            @(ViewBag.Method != null && ((List<string>)ViewBag.Method).Contains("borrow") ? "checked" : "")>
+                            <label class="form-check-label" for="borrow">Borrow</label>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Submit Button -->
+                    <div class="col-md-12">
+                        <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-
-
+   
 
     <!-- Book Catalog Section -->
     <div>
@@ -126,7 +156,6 @@
         }
         else
         {
-
             <div class="row row-cols-1 row-cols-md-3 g-4">
                 @foreach (var book in Model)
                 {
@@ -144,18 +173,15 @@
                                     <strong>Price for Borrow:</strong> @book.PriceForBorrow<br>
                                     @if (book.DISCOUNTEDPriceForBorrow > 0)
                                     {
-                                        <strong>Discounted Borrow Price:</strong> @book.DISCOUNTEDPriceForBorrow
-
-                                        <br>
+                                        <strong>Discounted Borrow Price:</strong> @book.DISCOUNTEDPriceForBorrow<br>
                                     }
                                     <strong>Price for Buy:</strong> @book.PriceForBuy<br>
                                     @if (book.DISCOUNTEDPriceForBuy > 0)
                                     {
-                                        <strong>Discounted Buy Price:</strong> @book.DISCOUNTEDPriceForBuy
-
-                                        <br>
+                                        <strong>Discounted Buy Price:</strong> @book.DISCOUNTEDPriceForBuy<br>
                                     }
                                     <strong>Formats:</strong>
+                                
                                     @if (book.PDF)
                                     {
                                         <span>PDF </span>
@@ -174,22 +200,6 @@
                                     }
                                 </p>
                                 <a href="/HomePage/BookDetails?bookTitle=@Uri.EscapeDataString(book.BookTitle)&author=@Uri.EscapeDataString(book.Author)&publisher=@Uri.EscapeDataString(book.Publisher)&yearOfPublication=@book.YearOfPublication" class="btn btn-primary">View Details</a>
-                                <br />
-                                <br />
-
-                                @if (book.AvailableAmountOfCopiesToBorrow==0)
-                               { <form action="/Admin/ShowBorrowingWaitingList" method="post" class="d-inline">
-                                        <input type="hidden" name="userId" value=@ViewBag.UserName />
-                                        <input type="hidden" name="BookTitle" value=book.BookTitle/>
-                                        <input type="hidden" name="Author" value=@book.Author/>
-                                        <input type="hidden" name="Publisher" value=@book.Publisher />
-                                        <input type="hidden" name="YearOfPublication" value=@book.YearOfPublication />
-
-                                        <button type="submit" class=" p-3 bg-light border rounded shadow-sm">Check out option for borrowing this book</button>
-                                </form>
-                               }
-                               
-
                             </div>
                         </div>
                     </div>

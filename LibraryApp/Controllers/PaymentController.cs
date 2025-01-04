@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LibraryApp.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using PayPal.Api;
 using System;
@@ -29,25 +30,69 @@ public class PaymentController : Controller
     {
         try
         {
-            // שליפת עגלת הקניות
-            List<int> cart = HttpContext.Session.GetObject<List<int>>("Cart") ?? new List<int>();
+            string userName = HttpContext.Session.GetString("Current user name");
+            if (string.IsNullOrEmpty(userName))
+            {
+                TempData["ErrorMessage"] = "You must be logged in to proceed with payment.";
+                return RedirectToAction("ViewCart", "Cart");
+            }
 
+            List<(string BookTitle, string Author, string Publisher, int YearOfPublication, string ActionType)> cartItems = new List<(string, string, string, int, string)>();
             decimal totalAmount = 0;
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
-                string query = "SELECT * FROM Books WHERE Id IN (" + string.Join(",", cart) + ")";
+                string query = @"
+            SELECT b.BookTitle, b.Author, b.Publisher, b.YearOfPublication, 
+                   b.PriceForBuy, b.PriceForBorrow, c.ActionType
+            FROM Cart c
+            INNER JOIN Books b ON c.BookTitle = b.BookTitle AND c.Author = b.Author
+            WHERE c.UserName = @UserName";
+
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
+                    command.Parameters.AddWithValue("@UserName", userName);
+
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            totalAmount += reader.GetDecimal(5); // BuyPrice
+                            string actionType = reader.GetString(6); // Borrow or Buy
+                            decimal price = actionType == "buy" ? reader.GetDecimal(4) : reader.GetDecimal(5);
+
+                            cartItems.Add((
+                                reader.GetString(0),  // BookTitle
+                                reader.GetString(1),  // Author
+                                reader.GetString(2),  // Publisher
+                                reader.GetInt32(3),   // YearOfPublication
+                                actionType           // ActionType
+                            ));
+
+                            totalAmount += price;
                         }
                     }
                 }
             }
+
+            if (!cartItems.Any())
+            {
+                TempData["ErrorMessage"] = "Your cart is empty.";
+                return RedirectToAction("ViewCart", "Cart");
+            }
+
+            // שמירת פרטי העגלה ב-Session לצורך עיבוד לאחר התשלום
+            HttpContext.Session.SetObject("CartItems", cartItems.Select(item => new cartItem
+            {
+                BookTitle = item.BookTitle,
+                Author = item.Author,
+                Publisher = item.Publisher,
+                YearOfPublication = item.YearOfPublication,
+                ActionType = item.ActionType,
+                AddedDate = DateTime.Now
+            }).ToList());
+
+
 
             var apiContext = GetApiContext();
 
@@ -56,17 +101,17 @@ public class PaymentController : Controller
                 intent = "sale",
                 payer = new Payer { payment_method = "paypal" },
                 transactions = new List<Transaction>
+            {
+                new Transaction
                 {
-                    new Transaction
+                    description = "eBook Purchase",
+                    amount = new Amount
                     {
-                        description = "eBook Purchase",
-                        amount = new Amount
-                        {
-                            currency = "USD",
-                            total = totalAmount.ToString("F2")
-                        }
+                        currency = "USD",
+                        total = totalAmount.ToString("F2")
                     }
-                },
+                }
+            },
                 redirect_urls = new RedirectUrls
                 {
                     return_url = Url.Action("PaymentSuccess", "Payment", null, Request.Scheme),
@@ -82,20 +127,113 @@ public class PaymentController : Controller
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = "Error creating payment: " + ex.Message;
-            return RedirectToAction("Index", "Cart");
+            return RedirectToAction("ViewCart", "Cart");
         }
     }
 
+
     public IActionResult PaymentSuccess(string paymentId, string token, string PayerID)
     {
-        HttpContext.Session.Remove("Cart");
+        string userName = HttpContext.Session.GetString("Current user name");
+        var cartItems = HttpContext.Session.GetObject<List<cartItem>>("CartItems");
+
+        if (cartItems == null || !cartItems.Any())
+        {
+            Console.WriteLine("No items found in the cart.");
+            TempData["ErrorMessage"] = "No items found in the cart.";
+            return RedirectToAction("ViewCart", "Cart");
+        }
+
+        // לוג נוסף להצגת הפריטים מה-Session
+        Console.WriteLine($"Retrieved {cartItems.Count} items from session:");
+        foreach (var item in cartItems)
+        {
+            Console.WriteLine($"BookTitle: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, ActionType: {item.ActionType}");
+        }
+
+        // עיבוד הפריטים והוספה לטבלאות המתאימות
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+
+            foreach (var item in cartItems)
+            {
+                if (item.ActionType == "buy")
+                {
+                    AddToPurchasedBooks(connection, userName, item);
+                }
+                else if (item.ActionType == "borrow")
+                {
+                    AddToBorrowedBooks(connection, userName, item);
+                }
+            }
+
+            // מחיקת כל הפריטים מהעגלה לאחר התשלום
+            string deleteQuery = "DELETE FROM Cart WHERE UserName = @UserName";
+            using (SqlCommand deleteCommand = new SqlCommand(deleteQuery, connection))
+            {
+                deleteCommand.Parameters.AddWithValue("@UserName", userName);
+                int rowsDeleted = deleteCommand.ExecuteNonQuery();
+                Console.WriteLine($"Deleted {rowsDeleted} items from the cart.");
+            }
+        }
+
         TempData["SuccessMessage"] = "Payment completed successfully!";
-        return RedirectToAction("Index", "HomePage");
+        return RedirectToAction("ViewCart", "Cart");
     }
+
+
+
 
     public IActionResult PaymentCancel()
     {
         TempData["ErrorMessage"] = "Payment was canceled.";
-        return RedirectToAction("Index", "Cart");
+        return RedirectToAction("ViewCart", "Cart");
     }
+
+    private void AddToPurchasedBooks(SqlConnection connection, string userName, cartItem item)
+    {
+        string query = @"
+    INSERT INTO PurchasedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, PurchaseDate) 
+    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE())";
+
+        using (SqlCommand command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@UserName", userName);
+            command.Parameters.AddWithValue("@BookTitle", item.BookTitle);
+            command.Parameters.AddWithValue("@Author", item.Author);
+            command.Parameters.AddWithValue("@Publisher", item.Publisher);
+            command.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+
+            int rowsAffected = command.ExecuteNonQuery();
+            Console.WriteLine($"Added to PurchasedBooks: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, Rows affected: {rowsAffected}");
+        }
+    }
+
+    private void AddToBorrowedBooks(SqlConnection connection, string userName, cartItem item)
+    {
+        string query = @"
+    INSERT INTO BorrowedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, BorrowDate, ReturnDate) 
+    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE(), DATEADD(DAY, 30, GETDATE()))";
+
+        using (SqlCommand command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@UserName", userName);
+            command.Parameters.AddWithValue("@BookTitle", item.BookTitle);
+            command.Parameters.AddWithValue("@Author", item.Author);
+            command.Parameters.AddWithValue("@Publisher", item.Publisher);
+            command.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+
+            int rowsAffected = command.ExecuteNonQuery();
+            Console.WriteLine($"Added to BorrowedBooks: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, Rows affected: {rowsAffected}");
+        }
+    }
+
+
+
+
 }
+
+
+
+

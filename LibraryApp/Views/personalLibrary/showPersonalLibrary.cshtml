@@ -1,0 +1,79 @@
+﻿@model List<LibraryApp.Models.LibraryItem>
+
+
+<div class="container py-5">
+    <h1 class="text-primary">Your Personal Library</h1>
+
+    @if (Model == null || !Model.Any())
+    {
+        <p class="text-danger">Your library is empty.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Book Title</th>
+                    <th>Author</th>
+                    <th>Publisher</th>
+                    <th>Year of Publication</th>
+                    <th>Action Type</th>
+                    <th>Date</th>
+                    <th>Remaining Days</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.BookTitle</td>
+                        <td>@item.Author</td>
+                        <td>@item.Publisher</td>
+                        <td>@item.YearOfPublication</td>
+                        <td>@item.ActionType</td>
+                        <td>@item.Date.ToShortDateString()</td>
+                        <td>
+                            @if (item.ActionType == "Borrowed")
+                            {
+                                @item.RemainingDays
+                                
+                            }
+                            else
+                            {
+                                
+                            }
+                        </td>
+                        <td>
+                            @if (item.ActionType == "Purchased")
+                            {
+                                <form method="post" action="/PersonalLibrary/RemoveBook" onsubmit="return confirm('Are you sure you want to remove this book?');">
+                                    <input type="hidden" name="bookTitle" value="@item.BookTitle" />
+                                    <input type="hidden" name="actionType" value="@item.ActionType" />
+                                    <button type="submit" class="btn btn-danger">Remove</button>
+                                </form>
+                            }
+                            else
+                            {
+                                
+                            }
+                        </td>
+
+                        <td>
+                            <!-- כפתור להוספת פידבק -->
+                            <a href="/PersonalLibrary/AddFeedback?bookTitle=@Uri.EscapeDataString(item.BookTitle)&author=@Uri.EscapeDataString(item.Author)&publisher=@Uri.EscapeDataString(item.Publisher)&yearOfPublication=@item.YearOfPublication"
+                               class="btn btn-secondary">
+                                Add Feedback & Rating
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="mt-3">
+        <a href="/HomePage/ShowBooks" class="btn btn-primary">Continue Shopping</a>
+
+    </div>
+</div>

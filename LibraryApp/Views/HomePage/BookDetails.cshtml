@@ -1,5 +1,6 @@
 ﻿@model Book
 
+
 <div class="container py-5">
     <h1 class="text-primary">@Model.BookTitle</h1>
     <div class="row">
@@ -55,6 +56,56 @@
            
         </div>
     </div>
+
+    <form method="post" action="/Cart/AddToCart">
+        <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
+        <input type="hidden" name="author" value="@Model.Author" />
+        <input type="hidden" name="publisher" value="@Model.Publisher" />
+        <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+
+        <!-- כפתור השאלה -->
+        <input type="hidden" name="actionType" value="borrow" />
+        <button type="submit" class="btn btn-warning mt-2">Borrow</button>
+    </form>
+
+    <form method="post" action="/Cart/AddToCart">
+        <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
+        <input type="hidden" name="author" value="@Model.Author" />
+        <input type="hidden" name="publisher" value="@Model.Publisher" />
+        <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+
+        <!-- כפתור קנייה -->
+        <input type="hidden" name="actionType" value="buy" />
+        <button type="submit" class="btn btn-success mt-2">Buy</button>
+    </form>
+
+    <hr class="my-5">
+
+    <!-- Feedback & Reviews Section -->
+    <div class="mt-5">
+        <h2>Feedback & Reviews</h2>
+
+        @if (ViewBag.Feedbacks != null && ((List<LibraryApp.Models.Feedback>)ViewBag.Feedbacks).Any())
+        {
+            <ul class="list-group">
+                @foreach (var feedback in (List<LibraryApp.Models.Feedback>)ViewBag.Feedbacks)
+                {
+                    <li class="list-group-item">
+                        <strong>@feedback.UserName</strong> - @feedback.Rating/5<br />
+                        <small>@feedback.FeedbackDate.ToShortDateString()</small>
+                        <p>@feedback.Comment</p>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>No feedbacks available for this book.</p>
+        }
+    </div>
+
+
+
 
     <!-- Alerts -->
     @if (TempData["ErrorMessage"] != null)
