@@ -5,6 +5,8 @@ namespace LibraryApp.Models
 {
     public class Book
     {
+       
+        
         [Key]
         public string BookTitle { get; set; }
 
@@ -45,5 +47,7 @@ namespace LibraryApp.Models
 		public int Popularity { get; set; }
 
         public string ImageUrl { get; set; }
+
+        public bool BuyOnly {  get; set; }
     }
 }

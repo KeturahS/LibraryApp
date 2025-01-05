@@ -1,5 +1,6 @@
 ﻿
 
+
 <div class="container py-5">
     <!-- Header Section -->
     <div class="text-center mb-5">
@@ -199,7 +200,22 @@
                                         <span>MOBI </span>
                                     }
                                 </p>
-                                <a href="/HomePage/BookDetails?bookTitle=@Uri.EscapeDataString(book.BookTitle)&author=@Uri.EscapeDataString(book.Author)&publisher=@Uri.EscapeDataString(book.Publisher)&yearOfPublication=@book.YearOfPublication" class="btn btn-primary">View Details</a>
+
+
+                                <form method="post" action="/Admin/ShowBookDetails">
+                                    <input type="hidden" name="bookTitle" value="@book.BookTitle" />
+                                    <input type="hidden" name="author" value="@book.Author" />
+                                    <input type="hidden" name="publisher" value="@book.Publisher" />
+                                    <input type="hidden" name="yearOfPublication" value="@book.YearOfPublication" />
+
+                                    <button type="submit" class="btn btn-warning mt-2">View Details</button>
+                                </form>
+
+
+                              @*   <a href="/HomePage/BookDetails?bookTitle=@Uri.EscapeDataString(book.BookTitle)&author=@Uri.EscapeDataString(book.Author)&publisher=@Uri.EscapeDataString(book.Publisher)&yearOfPublication=@book.YearOfPublication" class="btn btn-primary">View Details</a>
+                            *@
+                                                  
+ 
                             </div>
                         </div>
                     </div>

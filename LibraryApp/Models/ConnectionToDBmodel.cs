@@ -80,10 +80,35 @@ namespace LibraryApp.Models
 
 
 
+            public T ExecuteScalar<T>(string query, Dictionary<string, object> parameters)
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    // Open the connection asynchronously
+                    connection.Open();
+
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        // Add parameters to the command
+                        foreach (var param in parameters)
+                        {
+                            command.Parameters.AddWithValue(param.Key, param.Value);
+                        }
+
+                        // Execute the query and get the scalar result
+                        var result = command.ExecuteScalar();
+
+                        // Convert and return the result to the desired type
+                        return (T)Convert.ChangeType(result, typeof(T));
+                    }
+                }
+            }
 
 
 
-		}
+
+
+        }
     }
 }
      

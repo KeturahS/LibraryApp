@@ -1,7 +1,9 @@
 ﻿using LibraryApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 using System.Security.Policy;
+using static LibraryApp.Models.ConnectionToDBmodel;
 
 public class CartController : Controller
 {
@@ -228,6 +230,31 @@ public class CartController : Controller
                 if (rowsAffected > 0)
                 {
                     TempData["SuccessMessage"] = "Book removed from cart successfully.";
+
+
+                    string query1 = "UPDATE Books SET AvailableAmountOfCopiesToBorrow = AvailableAmountOfCopiesToBorrow + 1 WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+
+
+
+
+
+                    var parameters = new Dictionary<string, object>
+                      {
+                           { "@BookTitle", bookTitle },
+                           { "@Author",  author },
+                           { "@Publisher", publisher },
+                           { "@YearOfPublication",  yearOfPublication },
+                          };
+
+                    // Create a connection to the database
+                    ConnectionToDBModel connection1 = new ConnectionToDBModel(_configuration);
+
+                    // Execute the query and map the results to a list of User objects
+
+
+                    connection1.ExecuteNonQuery(
+                     query1, parameters);
+
                 }
                 else
                 {
@@ -236,7 +263,10 @@ public class CartController : Controller
             }
         }
 
-        return RedirectToAction("ViewCart", "Cart");
+        return RedirectToAction("UpdateAboutNewAvailableBook", "Admin", new { BookTitle = bookTitle, Author = author, Publisher = publisher, YearOfPublication = yearOfPublication });
+
+              
+       // return RedirectToAction("ViewCart", "Cart");
     }
 
 

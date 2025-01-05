@@ -239,10 +239,14 @@ namespace LibraryApp.Controllers
         public IActionResult SendEmptyBook()
         {
             TempData["Message"] = null;
+            Book book= new Book();
+            book.BuyOnly = false;
 
-            return View("AddBooks", new Book());
+            return View("AddBooks", book);
         }
 
+
+       
 
 
         public IActionResult AddBook(Book book)
@@ -341,6 +345,7 @@ namespace LibraryApp.Controllers
                     { "@mobi", book.mobi },
                     { "@Popularity",  book.Popularity },
                     { "@ImageUrl",  book.ImageUrl }
+                    
                 };
 
 
@@ -400,7 +405,8 @@ namespace LibraryApp.Controllers
                  f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
                  mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
                  Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
-                 ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl"))
+                 ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                 AvailableAmountOfCopiesToBorrow= reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow"))
              }
              );
 
@@ -468,7 +474,9 @@ namespace LibraryApp.Controllers
                     f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
                     mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
                     Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
-                    ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl"))
+                    ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow"))
+
                 }
             );
 
@@ -647,16 +655,302 @@ namespace LibraryApp.Controllers
         }
 
 
-        public IActionResult ShowBorrowingWaitingList(string UserId, string BookTitle, string Author, string Publisher, int YearOfPublication)
+    
 
-        { 
+        public bool IsUserOnWaitingList(Book book)
+        {
+            string email = HttpContext.Session.GetString("CurrentUser");
 
-            return View("BorrowingWaitingList");
+
+            string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE email= @Email AND BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", book.BookTitle },
+                   { "@Author", book.Author },
+                   { "@Publisher", book.Publisher },
+                   { "@YearOfPublication", book.YearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+            int res= connection.ExecuteScalar<int>(query, parameters);
+
+            return res > 0;
+        }
+
+
+
+        public IActionResult ShowBookDetails(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
+        {
+            Book book = GetBook(bookTitle, author, publisher, yearOfPublication);
+            bool ans = IsUserOnWaitingList( book);
+
+            if (ans)
+            {
+                TempData["Is current user on borrowing waiting list"] = "yes";
+            }
+            else
+                TempData["Is current user on borrowing waiting list"] = "no";
+
+
+           return View("BookDetails", book);
+
+        }
+
+
+        public IActionResult ShowBorrowingWaitingList(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
+        {
+
+          
+            //ספירת כמה אנשים יש ברשימת המתנה עבור הספר הספציפי
+            string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@BookTitle", bookTitle },
+                   { "@Author",  author },
+                   { "@Publisher",  publisher },
+                   { "@YearOfPublication",  yearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            int amountInWaitingList = connection.ExecuteScalar<int>(query, parameters);
+
+            BorrowingWaitingListViewModel model = new BorrowingWaitingListViewModel();
+
+            model.AmountInWaitingList = amountInWaitingList;
+
+            Book book = GetBook(bookTitle, author, publisher, yearOfPublication);
+
+            model.book = book;
+
+           bool ans = IsUserOnWaitingList(book);
+
+            model.IsCurrentUserOnList = ans;
+
+            model.ExpectedDaysUntilBookAvailable= AmountOfDaysTillBookAvailable(book);
+           
+            return View("BorrowingWaitingList", model);
+
+        }
+
+
+        public int AmountOfDaysTillBookAvailable(Book book)
+        {
+
+            var query = "SELECT MIN(BorrowDate) FROM BorrowedBooks WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            // Set up the parameters
+            var parameters = new Dictionary<string, object>
+            {
+                  { "@BookTitle", book.BookTitle },
+                   { "@Author",  book.Author },
+                   { "@Publisher",  book.Publisher },
+                   { "@YearOfPublication",  book.YearOfPublication }
+            };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+            object result = connection.ExecuteScalar<object>(query, parameters);
+
+            if (result == null || result == DBNull.Value)
+            { return 0; }
+
+            DateTime earliestBorrowDate = Convert.ToDateTime(result);
+
+            int daySinceFirstBorrowTillNow = (earliestBorrowDate - DateTime.Now).Days;
+
+            return 30 - daySinceFirstBorrowTillNow;
+
+
 
         }
 
 
 
 
-    }
+
+        public IActionResult AddUserToWaitingList(string Author, string BookTitle, string Publisher, int YearOfPublication, int AmountInWaitingList)
+        {
+
+            string insertQuery = @"
+        INSERT INTO BorrowingBookWaitingList 
+        (email, BookTitle, Author, Publisher, YearOfPublication, RequestDate, PlaceInQueue) 
+        VALUES (@Email, @BookTitle, @Author, @Publisher, @YearOfPublication, @Date, @PlaceInQueue)";
+
+
+            string email = HttpContext.Session.GetString("CurrentUser");
+            var parameters = new Dictionary<string, object>
+            {
+                { "@Email", email },
+                { "@BookTitle", BookTitle },
+                { "@Author", Author },
+                { "@Publisher", Publisher },
+                { "@YearOfPublication", YearOfPublication },
+                { "@Date", DateTime.Now },
+                { "@PlaceInQueue", AmountInWaitingList + 1 }
+
+            };
+
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+            connection.ExecuteNonQuery(insertQuery, parameters);
+
+            ViewBag.Message = "You Have been added to this book's Borrowing Waiting List";
+
+            BorrowingWaitingListViewModel model = new BorrowingWaitingListViewModel();
+            model.book = GetBook(Author, BookTitle, Publisher, YearOfPublication);
+
+            return RedirectToAction("ShowBorrowingWaitingList", new { bookTitle = BookTitle, author = Author, publisher = Publisher, yearOfPublication = YearOfPublication, isOnWaitingList = true });
+        }
+
+        public void RemoveUserFromWaitingListAfter30days()
+        {
+
+            DateTime Today= DateTime.Now;
+
+            var updateQuery = "DELETE FROM BorrowingBookWaitingList WHERE DATEDIFF(DAY, RequestDate, @Today) >= 30";
+
+
+            var parameters = new Dictionary<string, object>{
+                   {"@Today", Today},
+               };
+
+            // Execute the update using ExecuteQuery
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+            connection.ExecuteNonQuery(updateQuery, parameters);
+
+          
+        }
+
+
+
+        public IActionResult RemoveUserFromWaitingList(string Author, string BookTitle, string Publisher, int YearOfPublication)
+        {
+            var getPlaceInQueueQuery= "SELECT PlaceInQueue FROM BorrowingBookWaitingList WHERE email= @email AND BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";      
+            
+            String Email = HttpContext.Session.GetString("CurrentUser");
+
+
+            var parameters = new Dictionary<string, object>{
+                   { "@email", Email},
+                   { "@BookTitle", BookTitle },
+                   { "@Author",  Author },
+                   { "@Publisher",Publisher },
+                   { "@YearOfPublication", YearOfPublication }};
+
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            int placeInQueue = connection.ExecuteScalar<int>(getPlaceInQueueQuery, parameters);
+
+
+
+
+            string updateQuery = "DELETE FROM BorrowingBookWaitingList WHERE email= @email AND BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+           
+            connection.ExecuteNonQuery(updateQuery, parameters);
+
+            string updateQuery1 = "";
+            var parameters1 = new Dictionary<string, object> { };
+
+            if (placeInQueue == 1)
+            {
+                updateQuery1 = "UPDATE BorrowingBookWaitingList SET PlaceInQueue = PlaceInQueue - 1 WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+                parameters1 = new Dictionary<string, object>{
+                   { "@BookTitle", BookTitle },
+                   { "@Author",  Author },
+                   { "@Publisher",Publisher },
+                   { "@YearOfPublication", YearOfPublication} };
+            }
+            else
+            {
+                updateQuery1 = "UPDATE BorrowingBookWaitingList SET PlaceInQueue = PlaceInQueue - 1 WHERE PlaceInQueue>@deletedPlaceInQueue AND BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+                parameters1 = new Dictionary<string, object>{
+                   {"@deletedPlaceInQueue", placeInQueue},
+                    { "@BookTitle", BookTitle },
+                   { "@Author",  Author },
+                   { "@Publisher",Publisher },
+                   { "@YearOfPublication", YearOfPublication} };
+
+            }
+                    
+
+
+             connection.ExecuteNonQuery(updateQuery1, parameters1);
+
+
+            TempData["removedFromWaitingList"] = "You have successfully been removed from this waiting list";
+
+            return RedirectToAction("ShowBorrowingWaitingList", new { bookTitle= BookTitle, author=Author, publisher=Publisher, yearOfPublication= YearOfPublication, isOnWaitingList=false }   );
+
+
+
+        }
+
+
+
+
+        public IActionResult UpdateAboutNewAvailableBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
+        {
+
+            string query = "SELECT email FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication AND PlaceInQueue<4";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@BookTitle", BookTitle },
+                   { "@Author", Author },
+                   { "@Publisher", Publisher },
+                   { "@YearOfPublication", YearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            var emails = connection.ExecuteQuery<string>(
+                   query,
+                   parameters,
+                   reader => reader.GetString(0) // הנחה שהעמודה הראשונה היא האימייל
+               );
+
+
+            foreach (var email in emails)
+            {
+
+                Gmail gmail = new Gmail();
+
+                gmail.To = email;
+                gmail.Subject = "The book you have requested to borrow is currently available!!!";
+                gmail.Body = "Dear user " + email + " we are glad to inform you that the book "+ BookTitle+" year "+ YearOfPublication+ ", by the author "+ Author+ " and publisher "+Publisher+ " is available now for borrowing. Hurry and make the payment as soon as possible seeing as other users on the waiting list are being notified as well";
+
+                gmail.SendEmail();
+
+
+            }
+
+
+
+            return RedirectToAction("ViewCart", "Car"); ////צריך לטפל ביעד הזה כי זה לא מוביל למקום כלשהו
+
+        }
+        
+      
+    
+    
+    
+    };
+
+
+
+
+
+
 }
+
+

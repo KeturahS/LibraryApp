@@ -101,6 +101,28 @@
                   
                 </div>
 
+
+                <div class="row mt-3">
+
+                    <div>
+                     
+                           <label for="isBuyOnly" class="small">BUY ONLY?</label>
+                        <select id="isBuyOnly" name="isBuyOnly" class="form-control form-control-sm" onchange="DealWithBuyOnly()">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                            </select>
+
+                    </div>
+
+
+                </div>
+
+
+                     
+                  
+
+
+
                 <!-- Row 4 -->
                 <div class="row mt-3">
 
@@ -120,7 +142,7 @@
                 <div class="row mt-3 align-items-center">
                     <div class="col-md-3">
                         <label for="IsOnSale" class="small">Is on Sale:</label>
-                        <select id="IsOnSale" name="IsOnSale" class="form-control form-control-sm" onchange="DealWitheDiscountFields()">
+                        <select id="IsOnSale" name="IsOnSale" class="form-control form-control-sm" onchange="DealWithDiscountFields()">
                             <option value="0">No</option>
                             <option value="1">Yes</option>
                             </select>
@@ -141,20 +163,43 @@
          
 
                 <script>
-                    function DealWitheDiscountFields() {
+                    function DealWithDiscountFields() {
                         const isOnSale = document.getElementById("IsOnSale").value;
                         const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
                         const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
-
+                     
                         if (isOnSale === "1") {
                             discountedBuyField.disabled = false;
-                            discountedBorrowField.disabled = false;
-                        } else {
+
+                            DealWithBuyOnly();                        
+
+
+                        } 
+                        else {
                             discountedBuyField.disabled = true;
                             discountedBuyField.value = ""; // Clear the field
                             discountedBorrowField.disabled = true;
                             discountedBorrowField.value = ""; // Clear the field
                         }
+                    }
+                </script>
+
+                
+                <script>
+                    function DealWithBuyOnly() {
+                        const isBuyOnly = document.getElementById("isBuyOnly").value;
+                        const BorrowField = document.getElementById("PriceForBorrow");
+                        const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+
+                        if (isBuyOnly === "1") {
+                            BorrowField.disabled = true;
+                            discountedBorrowField.disabled = true;
+                        } 
+                        else {
+                            BorrowField.disabled = false; 
+                            discountedBorrowField.disabled = false; 
+                        }
+                    
                     }
                 </script>
 

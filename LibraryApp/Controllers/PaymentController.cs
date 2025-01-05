@@ -227,6 +227,10 @@ public class PaymentController : Controller
             int rowsAffected = command.ExecuteNonQuery();
             Console.WriteLine($"Added to BorrowedBooks: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, Rows affected: {rowsAffected}");
         }
+
+
+
+
     }
 
 

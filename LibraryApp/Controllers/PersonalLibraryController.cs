@@ -130,6 +130,9 @@ public class PersonalLibraryController : Controller
                 if (rowsAffected > 0)
                 {
                     TempData["SuccessMessage"] = "Book removed successfully.";
+
+                
+
                 }
                 else
                 {
