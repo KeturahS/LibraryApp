@@ -22,12 +22,54 @@
 </script>
 
 
+
+
+<head>
+	<style>
+		:root {
+			--primary-blue: #4DA8DA;
+			--light-blue: #E6F3FF;
+			--medium-blue: #B0E0E6;
+			--dark-blue: #1E90FF;
+		}
+
+		body {
+			background-color: var(--light-blue);
+		}
+
+
+
+
+
+		.submit-button {
+			background-color: var(--primary-blue);
+			border: 2px solid var(--primary-blue);
+			border-radius: 0 20px 20px 0;
+			color: white;
+			padding: 0.75rem 1.5rem;
+		}
+
+		.submin-button:hover {
+			background-color: var(--dark-blue);
+			border-color: var(--dark-blue);
+		}
+
+		  .text {
+            color: var(--primary-blue);
+            font-size: 2.5rem;
+            margin: 2rem 0;
+        }
+
+	</style>
+	</head>
+<body> 
+
 <div class="container d-flex justify-content-center align-items-start vh-100 pt-3">
 
 	<form action="SubmitUser" method="post" class="w-100 p-2 bg-light rounded shadow-sm" style="max-width: 400px;" onsubmit="return handleFormSubmit(event)">
 	
 		
-		<h1 class="text-center mb-1 text-primary">Registration</h1>
+		<h1 class="text">Registration</h1>
 
 		<div class="mb-1">
 			<label for="FirstName" class="form-label">Enter first name:</label>
@@ -71,7 +113,7 @@
 
 
 		<div class="d-grid">
-			<button type="submit" id="Submit1" class="btn btn-primary btn-sm">Sign up</button>
+			<button type="submit" id="Submit1" class="submit-button">Sign up</button>
 		</div>
 
 
@@ -91,8 +133,11 @@
 				Your request to become an admin has been sent to the Main Admin. You will receive an update via email once your request is reviewed and approved.
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+				<button type="button" class="submit-button" data-bs-dismiss="modal">OK</button>
 			</div>
 		</div>
 	</div>
-</div>
+</div
+
+
+</body>>

@@ -7,7 +7,46 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 
-<div class="d-flex justify-content-center align-items-center vh-100">
+
+<head>
+    <style>
+        :root {
+            --primary-blue: #4DA8DA;
+            --light-blue: #E6F3FF;
+            --medium-blue: #B0E0E6;
+            --dark-blue: #1E90FF;
+        }
+
+        body {
+            background-color: var(--light-blue);
+        }
+
+
+
+   
+
+        .submit-button {
+            background-color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+            border-radius: 0 20px 20px 0;
+            color: white;
+            padding: 0.75rem 1.5rem;
+        }
+
+            .submin-button:hover {
+                background-color: var(--dark-blue);
+                border-color: var(--dark-blue);
+            }
+
+      
+    </style>
+
+</head>
+<body>
+
+
+
+    <div class="d-flex justify-content-center align-items-center vh-100">
 
 	<form action="Login" method="post" class="w-50">
 
@@ -29,7 +68,7 @@
 
 
 		<div class="mb-3">
-		<button type="submit" class="btn btn-primary">Sign in</button>
+                <button type="submit" class="submit-button">Sign in</button>
 	</div>
 
 
@@ -53,7 +92,7 @@
                     @TempData["ErrorMessage"]
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                        <button type="button" class="submit-button" data-bs-dismiss="modal">Got it!</button>
                 </div>
             </div>
         </div>
@@ -66,3 +105,7 @@
         });
     </script>
 }
+
+
+
+</body>

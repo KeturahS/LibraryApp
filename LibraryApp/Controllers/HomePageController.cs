@@ -100,7 +100,7 @@ namespace LibraryApp.Controllers
                     return View("SignIn", model);
                 }
 
-                if (status == "Admin")
+                if (status == "Admin" || status=="SuperAdmin")
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
                     HttpContext.Session.SetString("Current user name", GetUser(model.email).FirstName);
