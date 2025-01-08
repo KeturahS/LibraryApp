@@ -10,6 +10,8 @@
         public string ActionType { get; set; }
         public DateTime AddedDate { get; set; }
 
+       
+
         public decimal PriceForBuy { get; set; }
         public decimal PriceForBorrow { get; set; }
     }

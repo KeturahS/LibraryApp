@@ -7,10 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNet.WebHooks.Receivers.Stripe" Version="1.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="PayPal" Version="1.9.1" />
     <PackageReference Include="PayPalServerSDK" Version="0.6.1" />
+    <PackageReference Include="Pdf2Text" Version="1.0.0" />
+    <PackageReference Include="Stripe.net" Version="47.2.0" />
   </ItemGroup>
 
   <ItemGroup>

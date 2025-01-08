@@ -37,13 +37,19 @@ public class CartController : Controller
             if (actionType == "borrow")
             {
                 // בדיקה אם המשתמש השאיל כבר 3 ספרים ב-30 הימים האחרונים
-                string borrowCountQuery = "SELECT COUNT(*) FROM BorrowedBooks WHERE UserName = @UserName AND BorrowDate >= DATEADD(DAY, -30, GETDATE())";
-                using (SqlCommand borrowCountCommand = new SqlCommand(borrowCountQuery, connection))
-                {
-                    borrowCountCommand.Parameters.AddWithValue("@UserName", userName);
-                    int borrowCount = (int)borrowCountCommand.ExecuteScalar();
+                // בדיקה אם המשתמש השאיל או מתכנן להשאיל יותר מ-3 ספרים (Cart + BorrowedBooks)
+                string totalBorrowCountQuery = @"
+                     SELECT 
+                    (SELECT COUNT(*) FROM BorrowedBooks WHERE UserName = @UserName AND BorrowDate >= DATEADD(DAY, -30, GETDATE()))
+                            +
+                    (SELECT COUNT(*) FROM Cart WHERE UserName = @UserName AND ActionType = 'borrow') AS TotalBorrowCount";
 
-                    if (borrowCount >= 3)
+                using (SqlCommand totalBorrowCountCommand = new SqlCommand(totalBorrowCountQuery, connection))
+                {
+                    totalBorrowCountCommand.Parameters.AddWithValue("@UserName", userName);
+                    int totalBorrowCount = (int)totalBorrowCountCommand.ExecuteScalar();
+
+                    if (totalBorrowCount >= 3)
                     {
                         TempData["ErrorMessage"] = "You cannot borrow more than 3 books within a 30-day period.";
                         return RedirectToAction("BookDetails", "HomePage", new { bookTitle, author, publisher, yearOfPublication });
@@ -118,6 +124,7 @@ public class CartController : Controller
             YearOfPublication = yearOfPublication,
             ActionType = actionType,
             AddedDate = DateTime.Now
+            
         };
 
         // הוספת הפריט לרשימת העגלה
@@ -144,6 +151,7 @@ public class CartController : Controller
     [HttpGet]
     public IActionResult ViewCart()
     {
+        CheckCartExpiration(); // בדיקת תוקף פריטים בעגלה
         string userName = HttpContext.Session.GetString("Current user name");
 
         if (string.IsNullOrEmpty(userName))
@@ -217,6 +225,7 @@ public class CartController : Controller
               AND Author = @Author 
               AND Publisher = @Publisher 
               AND YearOfPublication = @YearOfPublication";
+              
 
             using (SqlCommand command = new SqlCommand(query, connection))
             {
@@ -225,6 +234,7 @@ public class CartController : Controller
                 command.Parameters.AddWithValue("@Author", author);
                 command.Parameters.AddWithValue("@Publisher", publisher);
                 command.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+                
 
                 int rowsAffected = command.ExecuteNonQuery();
                 if (rowsAffected > 0)
@@ -263,11 +273,193 @@ public class CartController : Controller
             }
         }
 
-        return RedirectToAction("UpdateAboutNewAvailableBook", "Admin", new { BookTitle = bookTitle, Author = author, Publisher = publisher, YearOfPublication = yearOfPublication });
+        //return RedirectToAction("UpdateAboutNewAvailableBook", "Admin", new { BookTitle = bookTitle, Author = author, Publisher = publisher, YearOfPublication = yearOfPublication });
 
-              
-       // return RedirectToAction("ViewCart", "Cart");
+
+        return RedirectToAction("ViewCart", "Cart");
     }
+
+
+
+    public void CheckCartExpiration()
+    {
+        var cartItems = HttpContext.Session.GetObject<List<cartItem>>("CartItems") ?? new List<cartItem>();
+        var now = DateTime.Now;
+        bool itemsRemoved = false;
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+
+            foreach (var item in cartItems.ToList()) // יצירת עותק של הרשימה כדי לעבור עליה ולבצע שינויים
+            {
+                if (item.ActionType == "borrow" && (now - item.AddedDate).TotalMinutes > 60)
+                {
+                    string query = @"
+                DELETE FROM Cart 
+                WHERE UserName = @UserName 
+                  AND BookTitle = @BookTitle 
+                  AND Author = @Author 
+                  AND Publisher = @Publisher 
+                  AND YearOfPublication = @YearOfPublication";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@UserName", HttpContext.Session.GetString("Current user name"));
+                        command.Parameters.AddWithValue("@BookTitle", item.BookTitle);
+                        command.Parameters.AddWithValue("@Author", item.Author);
+                        command.Parameters.AddWithValue("@Publisher", item.Publisher);
+                        command.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+                        if (rowsAffected > 0)
+                        {
+                            itemsRemoved = true;
+                            Console.WriteLine($"Removed expired item from cart: {item.BookTitle}");
+
+                            // עדכון זמינות הספר בהשאלה
+                            string updateQuery = @"
+                        UPDATE Books 
+                        SET AvailableAmountOfCopiesToBorrow = AvailableAmountOfCopiesToBorrow + 1 
+                        WHERE BookTitle = @BookTitle 
+                          AND Author = @Author 
+                          AND Publisher = @Publisher 
+                          AND YearOfPublication = @YearOfPublication";
+
+                            using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
+                            {
+                                updateCommand.Parameters.AddWithValue("@BookTitle", item.BookTitle);
+                                updateCommand.Parameters.AddWithValue("@Author", item.Author);
+                                updateCommand.Parameters.AddWithValue("@Publisher", item.Publisher);
+                                updateCommand.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+                                updateCommand.ExecuteNonQuery();
+                            }
+
+                            // הסרת הפריט מהרשימה ב-Session
+                            cartItems.Remove(item);
+                        }
+                    }
+                }
+            }
+        }
+
+        // אם הוסרו פריטים, עדכון ה-Session והצגת הודעה למשתמש
+        if (itemsRemoved)
+        {
+            HttpContext.Session.SetObject("CartItems", cartItems);
+            TempData["ErrorMessage"] = "Some borrowed books were removed from your cart because they were not purchased within an hour.";
+        }
+    }
+
+
+
+
+    [HttpPost]
+    public IActionResult ChangeActionType(string bookTitle, string author, string publisher, int yearOfPublication, string newActionType)
+    {
+
+        string userName = HttpContext.Session.GetString("Current user name");
+
+        if (string.IsNullOrEmpty(userName))
+        {
+            TempData["ErrorMessage"] = "You must be logged in to change the action type.";
+            return RedirectToAction("ViewCart", "Cart");
+        }
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+
+            // בדיקה אם המשתמש מבקש לשנות ל-"borrow"
+            if (newActionType == "borrow")
+            {
+                // בדיקה אם המשתמש השאיל כבר 3 ספרים ב-30 הימים האחרונים
+                string borrowCountQuery = "SELECT COUNT(*) FROM BorrowedBooks WHERE UserName = @UserName AND BorrowDate >= DATEADD(DAY, -30, GETDATE())";
+                using (SqlCommand borrowCountCommand = new SqlCommand(borrowCountQuery, connection))
+                {
+                    borrowCountCommand.Parameters.AddWithValue("@UserName", userName);
+                    int borrowCount = (int)borrowCountCommand.ExecuteScalar();
+
+                    if (borrowCount >= 3)
+                    {
+                        TempData["ErrorMessage"] = "You cannot borrow more than 3 books within a 30-day period.";
+                        return RedirectToAction("ViewCart", "Cart");
+                    }
+                }
+            }
+
+            // שליפת המחיר המתאים לפי סוג הפעולה
+            string priceQuery = newActionType == "buy" ?
+                "SELECT PriceForBuy FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication" :
+                "SELECT PriceForBorrow FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+
+            
+            using (SqlCommand priceCommand = new SqlCommand(priceQuery, connection))
+            {
+                priceCommand.Parameters.AddWithValue("@BookTitle", bookTitle);
+                priceCommand.Parameters.AddWithValue("@Author", author);
+                priceCommand.Parameters.AddWithValue("@Publisher", publisher);
+                priceCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+
+                
+            }
+
+            // עדכון סוג הפעולה והמחיר בעגלה
+            string updateQuery = @"
+        UPDATE Cart 
+        SET ActionType = @NewActionType, AddedDate=GETDATE()
+        WHERE UserName = @UserName 
+          AND BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
+
+            using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
+            {
+                updateCommand.Parameters.AddWithValue("@NewActionType", newActionType);
+                
+                updateCommand.Parameters.AddWithValue("@UserName", userName);
+                updateCommand.Parameters.AddWithValue("@BookTitle", bookTitle);
+                updateCommand.Parameters.AddWithValue("@Author", author);
+                updateCommand.Parameters.AddWithValue("@Publisher", publisher);
+                updateCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+
+                int rowsAffected = updateCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    TempData["SuccessMessage"] = "Action type and price updated successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to update the action type. Please try again.";
+                }
+
+                // עדכון רשימת העגלה ב-Session
+                var cartItems = HttpContext.Session.GetObject<List<cartItem>>("CartItems") ?? new List<cartItem>();
+
+                // מציאת הפריט הספציפי בעגלה לעדכון
+                var itemToUpdate = cartItems.FirstOrDefault(item =>
+                    item.BookTitle == bookTitle &&
+                    item.Author == author &&
+                    item.Publisher == publisher &&
+                    item.YearOfPublication == yearOfPublication);
+
+                if (itemToUpdate != null)
+                {
+                    itemToUpdate.ActionType = newActionType;
+                    itemToUpdate.AddedDate = DateTime.Now; // עדכון זמן ההוספה
+                }
+
+                // שמירת הרשימה המעודכנת ב-Session
+                HttpContext.Session.SetObject("CartItems", cartItems);
+
+            }
+        }
+
+        return RedirectToAction("ViewCart", "Cart");
+    }
+
+
 
 
 

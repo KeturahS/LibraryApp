@@ -151,6 +151,13 @@ namespace LibraryApp.Controllers
 
         public IActionResult ShowBooks(string searchQuery)
         {
+            // בדיקה האם המשתמש מחובר
+            string userName = HttpContext.Session.GetString("Current user name");
+            if (string.IsNullOrEmpty(userName))
+            {
+                TempData["ErrorMessage"] = "You must be logged in to view this page.";
+                return RedirectToAction("SignIn", "HomePage");
+            }
             List<Book> books = new List<Book>();
 
             using (var connection = new SqlConnection(connectionString))
@@ -285,7 +292,8 @@ namespace LibraryApp.Controllers
                                 mobi = reader.GetBoolean(17),
                                 Popularity = reader.GetInt32(18),
                                 ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
+                                BuyOnly = reader.GetBoolean(21)
                             };
                         }
                     }
@@ -645,6 +653,7 @@ namespace LibraryApp.Controllers
         [HttpPost]
         public IActionResult AddServiceFeedback(int rating, string feedback)
         {
+
             string userName = HttpContext.Session.GetString("Current user name");
 
             if (string.IsNullOrEmpty(userName))
@@ -715,6 +724,13 @@ namespace LibraryApp.Controllers
         // פעולה שתציג את טופס הפידבק והרייטינג
         public IActionResult RateUs()
         {
+            // בדיקה האם המשתמש מחובר
+            string userName = HttpContext.Session.GetString("Current user name");
+            if (string.IsNullOrEmpty(userName))
+            {
+                TempData["ErrorMessage"] = "You must be logged in to view this page.";
+                return RedirectToAction("SignIn", "HomePage");
+            }
             return View("RateUs"); // יצירת View בשם "RateUs"
         }
 

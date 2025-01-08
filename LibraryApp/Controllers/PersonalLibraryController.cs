@@ -2,6 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System;
+using System.Text;
+
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
 
 public class PersonalLibraryController : Controller
 {
@@ -219,8 +224,64 @@ public class PersonalLibraryController : Controller
                 }
             }
         }
-
+        
         return RedirectToAction("showPersonalLibrary", "PersonalLibrary");
+    }
+
+
+
+
+
+    private string GetContentType(string format)
+    {
+        return format.ToLower() switch
+        {
+            "pdf" => "application/pdf",
+            "epub" => "application/epub+zip",
+            "f2b" => "application/octet-stream",
+            "mobi" => "application/x-mobipocket-ebook",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private byte[] GenerateDummyFileContent(string format, string bookTitle)
+    {
+        string dummyContent = $"This is a placeholder file for the book '{bookTitle}' in {format.ToUpper()} format.";
+        return Encoding.UTF8.GetBytes(dummyContent);
+    }
+
+    public IActionResult DownloadBook(string bookTitle, string format)
+    {
+        if (string.IsNullOrEmpty(bookTitle) || string.IsNullOrEmpty(format))
+        {
+            TempData["ErrorMessage"] = "Invalid request.";
+            return RedirectToAction("ShowPersonalLibrary");
+        }
+
+        if (format.ToLower() == "pdf")
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                // יצירת מסמך PDF
+                PdfWriter writer = new PdfWriter(memoryStream);
+                PdfDocument pdf = new PdfDocument(writer);
+                Document document = new Document(pdf);
+
+                // הוספת טקסט לקובץ ה-PDF
+                document.Add(new Paragraph($"This is a placeholder PDF file for the book '{bookTitle}'."));
+
+                document.Close();
+
+                // החזרת הקובץ כקובץ להורדה
+                return File(memoryStream.ToArray(), "application/pdf", $"{bookTitle}.pdf");
+            }
+        }
+
+        string fileName = $"{bookTitle}.{format}";
+        string contentType = GetContentType(format);
+        byte[] fileContent = GenerateDummyFileContent(format, bookTitle);
+
+        return File(fileContent, contentType, fileName);
     }
 
 

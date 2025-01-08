@@ -19,6 +19,7 @@
                     <th>Action Type</th>
                     <th>Added Date</th>
                     <th>Price</th>
+                    <th>Buy/Borrow</th>
                     <th>Remove</th>
                 </tr>
             </thead>
@@ -42,6 +43,34 @@
                                 @item.PriceForBorrow
                             }
                         </td>
+
+
+                         <!-- טופס להחלפת סוג הפעולה -->
+            <td>
+                <form method="post" action="/Cart/ChangeActionType">
+                    <input type="hidden" name="bookTitle" value="@item.BookTitle" />
+                    <input type="hidden" name="author" value="@item.Author" />
+                    <input type="hidden" name="publisher" value="@item.Publisher" />
+                    <input type="hidden" name="yearOfPublication" value="@item.YearOfPublication" />
+
+                                <select name="newActionType" class="form-select">
+                                    @if (item.ActionType == "buy")
+                                    {
+                                        <option value="buy" selected>Buy</option>
+                                        <option value="borrow">Borrow</option>
+                                    }
+                                    else if (item.ActionType == "borrow")
+                                    {
+                                        <option value="buy">Buy</option>
+                                        <option value="borrow" selected>Borrow</option>
+                                    }
+                                </select>
+
+
+                    <button type="submit" class="btn btn-primary mt-2">Change</button>
+                </form>
+            </td>
+
                         
                         
                         <td>
@@ -55,6 +84,8 @@
 
                             </form>
                         </td>
+
+
 
                         
                     </tr>
@@ -91,5 +122,20 @@
                 <i class="bi bi-paypal"></i> Pay with PayPal
             </button>
         </form>
+
     </div>
+
+
+    <a href="/Payment/CreditCardPaymentPage" class="btn btn-success btn-lg">
+        <i class="bi bi-credit-card"></i> Pay with Credit Card
+    </a>
+
+
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
+    }
+
+
 </div>

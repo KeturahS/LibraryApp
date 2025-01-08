@@ -60,6 +60,13 @@
                         </td>
 
                         <td>
+                            <a href="/PersonalLibrary/DownloadBook?bookTitle=@Uri.EscapeDataString(item.BookTitle)&format=pdf" class="btn btn-primary btn-sm">Download PDF</a>
+                            <a href="/PersonalLibrary/DownloadBook?bookTitle=@Uri.EscapeDataString(item.BookTitle)&format=epub" class="btn btn-primary btn-sm">Download EPUB</a>
+                            <a href="/PersonalLibrary/DownloadBook?bookTitle=@Uri.EscapeDataString(item.BookTitle)&format=f2b" class="btn btn-primary btn-sm">Download F2B</a>
+                            <a href="/PersonalLibrary/DownloadBook?bookTitle=@Uri.EscapeDataString(item.BookTitle)&format=mobi" class="btn btn-primary btn-sm">Download MOBI</a>
+                        </td>
+
+                        <td>
                             <!-- כפתור להוספת פידבק -->
                             <a href="/PersonalLibrary/AddFeedback?bookTitle=@Uri.EscapeDataString(item.BookTitle)&author=@Uri.EscapeDataString(item.Author)&publisher=@Uri.EscapeDataString(item.Publisher)&yearOfPublication=@item.YearOfPublication"
                                class="btn btn-secondary">
@@ -76,4 +83,7 @@
         <a href="/HomePage/ShowBooks" class="btn btn-primary">Continue Shopping</a>
 
     </div>
+
+
+
 </div>
