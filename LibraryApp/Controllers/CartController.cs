@@ -22,7 +22,7 @@ public class CartController : Controller
     public IActionResult AddToCart(string bookTitle, string author, string publisher, int yearOfPublication, string actionType)
     {
         // בדיקת פרטי המשתמש המחובר
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
         if (string.IsNullOrEmpty(userName))
         {
             TempData["ErrorMessage"] = "You must be logged in to add books to the cart.";
@@ -152,7 +152,7 @@ public class CartController : Controller
     public IActionResult ViewCart()
     {
         CheckCartExpiration(); // בדיקת תוקף פריטים בעגלה
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
 
         if (string.IsNullOrEmpty(userName))
         {
@@ -207,7 +207,7 @@ public class CartController : Controller
     [HttpPost]
     public IActionResult RemoveFromCart(string bookTitle, string author, string publisher, int yearOfPublication)
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
 
         if (string.IsNullOrEmpty(userName))
         {
@@ -305,7 +305,7 @@ public class CartController : Controller
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@UserName", HttpContext.Session.GetString("Current user name"));
+                        command.Parameters.AddWithValue("@UserName", HttpContext.Session.GetString("CurrentUser"));
                         command.Parameters.AddWithValue("@BookTitle", item.BookTitle);
                         command.Parameters.AddWithValue("@Author", item.Author);
                         command.Parameters.AddWithValue("@Publisher", item.Publisher);
@@ -358,7 +358,7 @@ public class CartController : Controller
     public IActionResult ChangeActionType(string bookTitle, string author, string publisher, int yearOfPublication, string newActionType)
     {
 
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
 
         if (string.IsNullOrEmpty(userName))
         {

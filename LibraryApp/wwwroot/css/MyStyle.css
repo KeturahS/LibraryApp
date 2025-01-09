@@ -1,7 +1,153 @@
 ﻿
+/* Ribbon Styles */
+.ribbon {
+    position: absolute;
+    top: 10px;
+    left: -10px;
+    z-index: 10;
+    overflow: hidden;
+    width: 100px;
+    height: 100px;
+}
+
+    .ribbon span {
+        position: absolute;
+        display: block;
+        width: 120px;
+        padding: 10px 0;
+        background: #ff3860;
+        color: white;
+        text-align: center;
+        font-weight: bold;
+        transform: rotate(-45deg);
+        top: 20px;
+        left: -20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+        .ribbon span:hover {
+            background: #ff6380;
+            text-shadow: 1px 1px 2px #000;
+        }
 
 
-h1 {
-    color: #007FFF;
-    
+
+:root {
+    --primary-blue: #4DA8DA;
+    --light-blue: #E6F3FF;
+    --medium-blue: #B0E0E6;
+    --dark-blue: #1E90FF;
+}
+
+body {
+    background-color: var(--light-blue);
+}
+
+
+.search-container {
+    margin: 2rem auto;
+}
+
+.search-input {
+    border: 2px solid var(--primary-blue);
+    border-radius: 20px 0 0 20px;
+    padding: 0.75rem 1.5rem;
+}
+
+.welcome-text {
+    color: var(--primary-blue);
+    font-size: 2.5rem;
+    margin: 2rem 0;
+}
+
+.user-name {
+    color: var(--dark-blue);
+    font-weight: bold;
+}
+
+.search-button {
+    background-color: var(--primary-blue);
+    border: 2px solid var(--primary-blue);
+    border-radius: 0 20px 20px 0;
+    color: white;
+    padding: 0.75rem 1.5rem;
+}
+
+    .search-button:hover {
+        background-color: var(--dark-blue);
+        border-color: var(--dark-blue);
+    }
+
+.filter-button {
+    background-color: var(--medium-blue);
+    border: none;
+    color: #00008B;
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+}
+
+    .filter-button:hover {
+        background-color: var(--primary-blue);
+        color: white;
+    }
+
+.sort-button {
+    background-color: var(--medium-blue);
+    border: none;
+    color: #00008B;
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+}
+
+    .sort-button:hover {
+        background-color: var(--primary-blue);
+        color: white;
+    }
+
+
+body {
+    background-color: #E6F3FF;
+}
+
+.navbar {
+    background-color: #4DA8DA !important;
+}
+
+.card {
+    background-color: #F0F8FF;
+    border: 1px solid #87CEFA;
+}
+
+.card-header {
+    background-color: #B0E0E6;
+    color: #00008B;
+}
+
+.btn-primary {
+    background-color: #4DA8DA;
+    border-color: #4DA8DA;
+}
+
+    .btn-primary:hover {
+        background-color: #1E90FF;
+        border-color: #1E90FF;
+    }
+
+.btn-outline-primary {
+    color: #4DA8DA;
+    border-color: #4DA8DA;
+}
+
+    .btn-outline-primary:hover {
+        background-color: #4DA8DA;
+        color: white;
+    }
+
+.table {
+    background-color: white;
+}
+
+.marquee {
+    background-color: #B0E0E6;
+    color: #00008B;
 }

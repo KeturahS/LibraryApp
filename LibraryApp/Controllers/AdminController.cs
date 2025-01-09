@@ -97,6 +97,8 @@ namespace LibraryApp.Controllers
         [HttpPost]
         public IActionResult ApproveRejectDeleteAdd(string userId, string action)
         {
+        
+
             if (action == "approve")
             {
 
@@ -322,7 +324,7 @@ namespace LibraryApp.Controllers
 
 
 
-            var updateQuery = "INSERT INTO Books VALUES (@BookTitle, @Author, @Publisher, @YearOfPublication, @Genre, @DISCOUNTEDPriceForBorrow, @DISCOUNTEDPriceForBuy, @PriceForBorrow, @PriceForBuy, @AgeRestriction, @IsOnSale, @PDF, @epub, @f2b, @mobi, @Popularity, @ImageUrl)";
+            var updateQuery = "INSERT INTO Books VALUES (@BookTitle, @Author, @Publisher, @YearOfPublication, @Genre, @DISCOUNTEDPriceForBorrow, @DISCOUNTEDPriceForBuy, @PriceForBorrow, @PriceForBuy, @AgeRestriction, @IsOnSale, @PDF, @epub, @f2b, @mobi, @Popularity, @ImageUrl, @AvailableAmountOfCopiesToBorrow, @BuyOnly)";
 
             // Set up the parameters
 
@@ -344,8 +346,9 @@ namespace LibraryApp.Controllers
                     { "@f2b", book.f2b },
                     { "@mobi", book.mobi },
                     { "@Popularity",  book.Popularity },
-                    { "@ImageUrl",  book.ImageUrl }
-                    
+                    { "@ImageUrl",  book.ImageUrl },
+                    { "@AvailableAmountOfCopiesToBorrow",  book.AvailableAmountOfCopiesToBorrow },
+                    { "@BuyOnly",  book.BuyOnly },
                 };
 
 
@@ -406,7 +409,8 @@ namespace LibraryApp.Controllers
                  mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
                  Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
                  ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
-                 AvailableAmountOfCopiesToBorrow= reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow"))
+                 AvailableAmountOfCopiesToBorrow= reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                 BuyOnly= reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
              }
              );
 
@@ -475,7 +479,8 @@ namespace LibraryApp.Controllers
                     mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
                     Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
                     ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
-                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow"))
+                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                    BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
 
                 }
             );
@@ -939,11 +944,21 @@ namespace LibraryApp.Controllers
             return RedirectToAction("ViewCart", "Car"); ////צריך לטפל ביעד הזה כי זה לא מוביל למקום כלשהו
 
         }
-        
-      
-    
-    
-    
+
+
+
+        public IActionResult UpdateAboutSuccssefulPayment(string email)
+
+        {
+
+
+            return RedirectToAction("ViewCart", "Car");
+        }
+
+
+
+
+
     };
 
 

@@ -139,7 +139,7 @@ namespace LibraryApp.Controllers
                 query, parameters, reader => new User
                 {
                    FirstName = reader.GetString(1),
-                   LastName = reader.GetString(2),
+             
                 }
             );
 
@@ -198,8 +198,8 @@ namespace LibraryApp.Controllers
                                 mobi = reader.GetBoolean(17),
                                 Popularity = reader.GetInt32(18),
                                 ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
-
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
+                                BuyOnly = reader.GetBoolean(21)
                             });
                         }
                     }
@@ -210,7 +210,7 @@ namespace LibraryApp.Controllers
             ViewBag.AllAuthors = GetAllAuthorsFromDatabase();
             ViewBag.AllGenres = GetAllGenresFromDatabase();
 
-            ViewBag.UserName = HttpContext.Session.GetString("Current user name");
+            ViewBag.UserName = userName;
            
             ViewBag.SearchQuery = searchQuery;
 
@@ -387,7 +387,8 @@ namespace LibraryApp.Controllers
                                 mobi = reader.GetBoolean(17),
                                 Popularity = reader.GetInt32(18),
                                 ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
+                                BuyOnly = reader.GetBoolean(21)
 
 							});
                         }
@@ -395,7 +396,7 @@ namespace LibraryApp.Controllers
                 }
             }
 
-            ViewBag.UserName = HttpContext.Session.GetString("CurrentUser");
+            ViewBag.UserName = HttpContext.Session.GetString("Current user name");
 
             ViewBag.SearchQuery = searchQuery;
 
@@ -460,8 +461,10 @@ namespace LibraryApp.Controllers
                                 mobi = reader.GetBoolean(17),
                                 Popularity = reader.GetInt32(18),
                                 ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
-                            });
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
+								BuyOnly = reader.GetBoolean(21)
+
+							});
                         }
                     }
                 }
@@ -579,8 +582,9 @@ namespace LibraryApp.Controllers
 
                                     Popularity = reader.GetInt32(18),
                                     ImageUrl = reader.GetString(19),
-                                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(20)
-                                });
+                                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
+                                    BuyOnly = reader.GetBoolean(21)
+								});
                             }
                         
                        
@@ -654,7 +658,7 @@ namespace LibraryApp.Controllers
         public IActionResult AddServiceFeedback(int rating, string feedback)
         {
 
-            string userName = HttpContext.Session.GetString("Current user name");
+            string userName = HttpContext.Session.GetString("CurrentUser");
 
             if (string.IsNullOrEmpty(userName))
             {
@@ -725,7 +729,7 @@ namespace LibraryApp.Controllers
         public IActionResult RateUs()
         {
             // בדיקה האם המשתמש מחובר
-            string userName = HttpContext.Session.GetString("Current user name");
+            string userName = HttpContext.Session.GetString("CurrentUser");
             if (string.IsNullOrEmpty(userName))
             {
                 TempData["ErrorMessage"] = "You must be logged in to view this page.";

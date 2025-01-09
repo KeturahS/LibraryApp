@@ -33,7 +33,7 @@ public class PaymentController : Controller
     {
         try
         {
-            string userName = HttpContext.Session.GetString("Current user name");
+            string userName = HttpContext.Session.GetString("CurrentUser");
             if (string.IsNullOrEmpty(userName))
             {
                 TempData["ErrorMessage"] = "You must be logged in to proceed with payment.";
@@ -134,10 +134,11 @@ public class PaymentController : Controller
         }
     }
 
+    
 
     public IActionResult PaymentSuccess(string paymentId, string token, string PayerID)
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
         var cartItems = HttpContext.Session.GetObject<List<cartItem>>("CartItems");
 
         if (cartItems == null || !cartItems.Any())
@@ -181,7 +182,27 @@ public class PaymentController : Controller
             }
         }
         TempData["SuccessMessage"] = "Payment completed successfully!";
+
+
+      
+
+
         return RedirectToAction("ViewCart", "Cart");
+    }
+
+
+
+    public void SuccessfulPaymentEmail(string email)
+    {
+        Gmail gmail = new Gmail();
+
+        gmail.To = email;
+        gmail.Subject = "Thank You for Your Purchase! Your Book is Now in Your Personal Library";
+        gmail.Body = "Dear " + email + ",\r\n\r\nWe are delighted to inform you that your payment for the book has been successfully processed. The books have now been added to your personal eBook library on our website. You can access your library at any time by logging into your account.\r\n\r\nIf you have any questions or need assistance, feel free to contact us at i.k.ebooklibraryservice@gmail.com.\r\n\r\nThank you for choosing i.k.ebooklibraryservice!";
+
+        gmail.SendEmail();
+
+
     }
 
 
@@ -241,7 +262,7 @@ public class PaymentController : Controller
     {
         try
         {
-            string userName = HttpContext.Session.GetString("Current user name");
+            string userName = HttpContext.Session.GetString("CurrentUser");
             
             if (string.IsNullOrEmpty(userName))
             {
@@ -341,6 +362,11 @@ public class PaymentController : Controller
                         deleteCommand.Parameters.AddWithValue("@UserName", userName);
                         deleteCommand.ExecuteNonQuery();
                     }
+
+                    SuccessfulPaymentEmail(userName);
+
+
+
                 }
 
 
@@ -362,7 +388,7 @@ public class PaymentController : Controller
 
     public IActionResult CreditCardPaymentPage()
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
         if (string.IsNullOrEmpty(userName))
         {
             TempData["ErrorMessage"] = "You must be logged in to proceed.";

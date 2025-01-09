@@ -17,15 +17,19 @@
 				<p class="card-text">
 					<strong>Author:</strong> @Model.Author <br />
 					<strong>Publisher:</strong> @Model.Publisher <br />
-					<strong>Borrow Price:</strong> $@Model.PriceForBorrow <br />
+					@if (Model.BuyOnly == false)
+							{
+								<strong>Borrow Price:</strong> @Model.PriceForBorrow 
+							}
+
 					<strong>Buy Price:</strong> $@Model.PriceForBuy<br />
 					<strong>Sale:</strong> @(@Model.IsOnSale ? "Yes" : "No")<br />
 					@if (Model.IsOnSale)
 							{
-								@if(Model.DISCOUNTEDPriceForBorrow > 0)
-							{<strong>Discounted Borrow Price:</strong> @Model.DISCOUNTEDPriceForBorrow<br />}
+								@if(Model.DISCOUNTEDPriceForBorrow > 0 && Model.BuyOnly==false)
+									{<strong>Discounted Borrow Price:</strong> @Model.DISCOUNTEDPriceForBorrow<br />}
 								@if (Model.DISCOUNTEDPriceForBuy > 0)
-							{<strong>Discounted Buy Price:</strong> @Model.DISCOUNTEDPriceForBuy<br />}
+									{<strong>Discounted Buy Price:</strong> @Model.DISCOUNTEDPriceForBuy<br />}
 							}
 				</p>
 
@@ -42,38 +46,119 @@
 
 					<!-- Row 1 -->
 					<div class="row">
-						<div class="col-md-6">
-							<label for="PriceForBorrow" class="small"> Update Borrowing price: </label>
-									<input type="text" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" value="@Model.PriceForBorrow" onchange="validatePrices()" />
+
+								<div class="col-md-6">
+									<label for="Popularity" class="small"> Update Popularity:</label>
+									<select id="Popularity" name="Popularity" class="form-control form-control-sm" value="@Model.Popularity">
+										<option value="1">1</option>
+										<option value="2">2</option>
+										<option value="3">3</option>
+										<option value="4">4</option>
+										<option value="5">5</option>
+										<option value="6">6</option>
+										<option value="7">7</option>
+										<option value="8">8</option>
+										<option value="9">9</option>
+										<option value="10">10</option>
+									</select>
+								</div>
+
+								<div class="col-md-6">
+									<label for="AgeRestriction" class="small">Update Age Restriction:</label>
+									<select id="AgeRestriction" name="AgeRestriction" class="form-control form-control-sm" value="@Model.AgeRestriction">
+										<option value="18+">18+</option>
+										<option value="21+">21+</option>
+										<option value="12+">12+</option>
+										<option value="7+">7+</option>
+										<option value="All Ages">All Ages</option>
+									</select>
+								</div>
+
+					</div>
+
+
+
+					<div class="row mt-3">
+
+						<div>
+                     
+							<label for="isBuyOnly" class="small">BUY ONLY?   @(@Model.BuyOnly ? "Yes" : "No")  </label>
+							<br />
+							<select id="isBuyOnly" name="isBuyOnly" class="form-control form-control-sm" onchange="DealWithBuyOnly()">
+								@if(Model.BuyOnly==true)
+										{
+											<option value="1">Declared as BUY ONLY</option>
+											<option value="0">Declare as Not BUY ONLY</option>
+
+										}
+								else
+										{
+											<option value="0">Declared as Not BUY ONLY</option>
+											<option value="1">Declare as BUY ONLY</option>
+											
+
+										}
+										
+								</select>
+
 						</div>
+
+						@if (Model.BuyOnly == false)
+								{
+									<div class="col-md-6">
+										<label for="PriceForBorrow" class="small"> Update Borrowing price: </label>
+										<input type="text" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" value = "@Model.PriceForBorrow" onchange="validatePrices()" />
+									</div>
+								}
+						else
+								{
+									<div class="col-md-6">
+										<label for="PriceForBorrow" class="small"> Update Borrowing price: </label>
+										<input type="text" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" onchange="validatePrices()" disabled />
+									</div>
+									
+								}
+
+                      </div>
+
+
+				    <div class="row mt-3">
+						
+
+
 						<div class="col-md-6">
 							<label for="PriceForBuy" class="small">Update Buying price:</label>
 									<input type="text" id="PriceForBuy" name="PriceForBuy" class="form-control form-control-sm" value="@Model.PriceForBuy" onchange="validatePrices()" />
 						</div>
 								
-										
+			    	</div>		
+						
+				
 						
 						
-						<div class="row mt-3 align-items-center">
-									<div class="col-md-3">
-										<label for="UpdateSale" class="small">Update Sale:</label>
+				      <div class="row mt-3">
+						
+						  
+						  
+									<label for="UpdateSale" class="small">Update Sale:</label>
 										<select id="UpdateSale" name="UpdateSale" class="form-control form-control-sm w-100" onchange="DealWitheDiscountFields()">
-											<option value="0">Do Not Update</option>
-											<option value="1">Update</option>
-											</select>
-									</div>
-									
-									
+											<option value="0">      </option>
+											<option value="1">Update sale</option>
+										</select>
+								
+
+			     	</div>
+
+				
+				
+				    <div class="row mt-3 align-items-center">
 
 
-								</div>
+					   
+				           <div class="col-md-3">
 
-								<div class="row mt-3 align-items-center">
-
-
-									<div class="col-md-3">
 										<label for="DISCOUNTEDPriceForBorrow" class="small"> Discounted Price for Borrow:</label>
-										@if (@Model.DISCOUNTEDPriceForBorrow > 0)
+										@if (@Model.DISCOUNTEDPriceForBorrow > 0 && Model.BuyOnly==false)
 										{
 											<input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled value="@Model.DISCOUNTEDPriceForBorrow">
 										}
@@ -82,9 +167,12 @@
 											<input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled>
 										}
 
-									</div>
+							</div>
+					   
 
-									<div class="col-md-3">
+					
+
+					       <div class="col-md-3">
 
 										<label for="DISCOUNTEDPriceForBuy" class="small"> Discounted Price for Buy:</label>
 
@@ -99,11 +187,36 @@
 
 										}
 
-									</div>
+					       </div>
+					
+				     </div>
+								
+								  <script>
+									function DealWithBuyOnly() {
+										const isBuyOnly = document.getElementById("isBuyOnly").value;
+										const BorrowField = document.getElementById("PriceForBorrow");
+										const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+										const UpdateSale = document.getElementById("UpdateSale").value;
 
-								</div>
+										if (isBuyOnly === "1" )  ///meaning that the book is BUY ONLY
+										{
+											BorrowField.disabled = true;
+											discountedBorrowField.disabled = true;
+										} 
+										if (isBuyOnly === "0") ///meaning that the book is not BUY ONLY
+										{
+											BorrowField.disabled = false; 
+											DealWitheDiscountFields();
+											
+											
+										}
+                    
+									}
+								  </script>
+
 								
-								
+
+								<div id="modelData" data-BuyOnly="@Model.BuyOnly"></div>
 
 
 								<script>
@@ -111,19 +224,15 @@
 										const UpdateSale = document.getElementById("UpdateSale").value;
 										const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
 										const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+										const updateBuyOnlyField= document.getElementById("isBuyOnly")
+										const element = document.getElementById('modelData');
+										const BuyOnly = element.dataset.BuyOnly;
 
 										if (UpdateSale === "1") {
 											discountedBuyField.disabled = false;
 											discountedBorrowField.disabled = false;
 										}
-										if (UpdateSale === "0") 
-										{	discountedBuyField.disabled = true;
-											discountedBorrowField.disabled = true;
-										}
-										if (UpdateSale === "2") {
-											discountedBuyField.disabled = true;
-											discountedBorrowField.disabled = true;
-										}
+																			
 
 
 									}
@@ -165,9 +274,7 @@
 								
 
 
-						</div>
-
-							<div class="form-group">
+						<div class="form-group">
 								<label>Available Formats:</label>
 								<div class="form-check">
 									<input type="checkbox" class="form-check-input" id="PDF" name="PDF" value="true" @(Model.PDF ? "checked" : "")>
