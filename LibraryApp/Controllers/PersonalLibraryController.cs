@@ -7,6 +7,8 @@ using System.Text;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
+using static LibraryApp.Models.ConnectionToDBmodel;
+using System.Security.Policy;
 
 public class PersonalLibraryController : Controller
 {
@@ -21,7 +23,7 @@ public class PersonalLibraryController : Controller
 
     public IActionResult showPersonalLibrary()
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
         if (string.IsNullOrEmpty(userName))
         {
             TempData["ErrorMessage"] = "You must be logged in to view your personal library.";
@@ -100,7 +102,7 @@ public class PersonalLibraryController : Controller
     [HttpPost]
     public IActionResult RemoveBook(string bookTitle, string actionType)
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
         if (string.IsNullOrEmpty(userName))
         {
             TempData["ErrorMessage"] = "You must be logged in to remove a book.";
@@ -136,9 +138,17 @@ public class PersonalLibraryController : Controller
                 {
                     TempData["SuccessMessage"] = "Book removed successfully.";
 
+                    if (actionType == "Borrowed")
+                    {
+                       // UpdateAboutNewAvailableBook(bookTitle, Author, Publisher, YearOfPublication);   /// כאן בעצם שולחים לשלושה אנשים ראשונים שברשימת ההמתנה לספר הזה שהספר זמין אבל אפשר לעשות את זה רק אם ארבעת השדות של המפתח של הספר מתקבלים כפרמטרים בפונקציה הזאת
+                                                                                                            ////ברגע שאתה מסדר את הטבלה אז אפשר פשוט להוציא את זה מההערות
+
+					}
+                }
+
                 
 
-                }
+                
                 else
                 {
                     TempData["ErrorMessage"] = "Failed to remove the book.";
@@ -150,9 +160,54 @@ public class PersonalLibraryController : Controller
     }
 
 
-    public IActionResult AddFeedback(string bookTitle, string author, string publisher, int yearOfPublication)
+
+	public void UpdateAboutNewAvailableBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
+	{
+
+		string query = "SELECT email FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication AND PlaceInQueue<4";
+
+		var parameters = new Dictionary<string, object>
+	   {
+			{ "@BookTitle", BookTitle },
+			{ "@Author", Author },
+			{ "@Publisher", Publisher },
+			{ "@YearOfPublication", YearOfPublication }
+		 };
+
+		// Create a connection to the database
+		ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+		var emails = connection.ExecuteQuery<string>(
+			   query,
+			   parameters,
+			   reader => reader.GetString(0) // הנחה שהעמודה הראשונה היא האימייל
+		   );
+
+
+		foreach (var email in emails)
+		{
+
+			Gmail gmail = new Gmail();
+
+			gmail.To = email;
+			gmail.Subject = "The book you have requested to borrow is now available!!!";
+			gmail.Body = "Dear user " + email + " we are glad to inform you that the book " + BookTitle + " year " + YearOfPublication + ", by the author " + Author + " and publisher " + Publisher + " is available now for borrowing. Hurry and make the payment as soon as possible seeing as other users on the waiting list are being notified as well.";
+
+			gmail.SendEmail();
+
+
+		}
+
+
+	}
+
+
+
+
+
+	public IActionResult AddFeedback(string bookTitle, string author, string publisher, int yearOfPublication)
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
 
         // בדיקה אם המשתמש רכש או השאיל את הספר
         using (SqlConnection connection = new SqlConnection(connectionString))
@@ -194,7 +249,7 @@ public class PersonalLibraryController : Controller
     [HttpPost]
     public IActionResult SubmitFeedback(string bookTitle, string author, string publisher, int yearOfPublication, int rating, string feedback)
     {
-        string userName = HttpContext.Session.GetString("Current user name");
+        string userName = HttpContext.Session.GetString("CurrentUser");
 
         using (SqlConnection connection = new SqlConnection(connectionString))
         {

@@ -125,6 +125,10 @@ public class PaymentController : Controller
             var createdPayment = payment.Create(apiContext);
             var approvalUrl = createdPayment.links.FirstOrDefault(link => link.rel.Equals("approval_url", StringComparison.OrdinalIgnoreCase))?.href;
 
+
+            SuccessfulPaymentEmail(userName);
+
+
             return Redirect(approvalUrl);
         }
         catch (Exception ex)
@@ -184,7 +188,8 @@ public class PaymentController : Controller
         TempData["SuccessMessage"] = "Payment completed successfully!";
 
 
-      
+        SuccessfulPaymentEmail(userName);
+
 
 
         return RedirectToAction("ViewCart", "Cart");

@@ -84,7 +84,7 @@ namespace LibraryApp.Models
             {
                 using (var connection = new SqlConnection(_connectionString))
                 {
-                    // Open the connection asynchronously
+                    // Open the connection
                     connection.Open();
 
                     using (var command = new SqlCommand(query, connection))
@@ -92,17 +92,29 @@ namespace LibraryApp.Models
                         // Add parameters to the command
                         foreach (var param in parameters)
                         {
-                            command.Parameters.AddWithValue(param.Key, param.Value);
+                            command.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
                         }
 
                         // Execute the query and get the scalar result
                         var result = command.ExecuteScalar();
+
+                        // Handle null results
+                        if (result == null || result == DBNull.Value)
+                        {
+                            return default; // Return default value for the type T
+                        }
 
                         // Convert and return the result to the desired type
                         return (T)Convert.ChangeType(result, typeof(T));
                     }
                 }
             }
+
+
+
+
+
+
 
 
 

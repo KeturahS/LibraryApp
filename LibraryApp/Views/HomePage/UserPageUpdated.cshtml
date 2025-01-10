@@ -1,7 +1,6 @@
 ﻿
 <link href="~/css/mystyle.css" rel="stylesheet" />
 
-
 <body> 
 
 
@@ -177,13 +176,27 @@
                                     <div class="col">
                                         <div class="card h-100">
 
+
+                                    @{
+                                        // Calculate the number of days remaining in the sale
+                                        int daysLeft = (book.SaleEndDate - DateTime.Now).Days;
+                                    }
+
                                             @if (book.IsOnSale == true)
                                             {
                                                 @if (book.DISCOUNTEDPriceForBuy > 0 || (book.DISCOUNTEDPriceForBorrow > 0 && book.BuyOnly == false))
                                                 {
                                                     <div class="ribbon">
-                                                        <span>SALE!</span>
-                                                    </div>
+                                                        @if (daysLeft > 1)
+                                                        {
+                                                    <span>SALE!<br /> @daysLeft days left</span>
+                                                        }
+                                                        @if (daysLeft == 1)
+                                                        {
+                                                            <span>SALE! @daysLeft day left</span>
+                                                        }
+                                                       
+                                                      </div>
                                                 }
                                             }
 
@@ -229,7 +242,8 @@
 
                                             @if(book.BuyOnly==true)
                                             {
-                                                        <strong>This book is BUY ONLY</strong>
+                                                     <br />
+                                                <strong>This book is BUY ONLY</strong>
                                                         <br />  
                                                 
                                             }

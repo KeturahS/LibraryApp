@@ -75,11 +75,17 @@ public class CartController : Controller
                     int rowsAffected = borrowCommand.ExecuteNonQuery();
                     if (rowsAffected > 0)
                     {
-                        TempData["SuccessMessage"] = "Book borrowed successfully.";
+                        TempData["SuccessMessage"] = "Book for borrowing added to cart successfully.";
+
+                        if (IsUserOnWaitingList(bookTitle, author, publisher, yearOfPublication))
+                        {
+                            RemoveUserFromWaitingList(userName, bookTitle, author, publisher, yearOfPublication);  ///מחיקת המשתמש מרשימת ההמתנה אם הוא נמצא בה כי הוא כבר הכניס את הספר לעגלה
+                        }
+
                     }
                     else
                     {
-                        TempData["ErrorMessage"] = "Failed to borrow the book. It might be unavailable.";
+                        TempData["ErrorMessage"] = "Failed to add the book to cart. It might be unavailable.";
                     }
 
                     // לוג לאחר הוספה לעגלה
@@ -103,6 +109,9 @@ public class CartController : Controller
                     if (rowsAffected > 0)
                     {
                         TempData["SuccessMessage"] = "Book added to cart successfully.";
+
+                       
+
                     }
                     else
                     {
@@ -142,6 +151,130 @@ public class CartController : Controller
         }
 
         return RedirectToAction("BookDetails", "HomePage", new { bookTitle, author, publisher, yearOfPublication });
+    }
+
+
+
+
+    public bool IsUserOnWaitingList(string bookTitle, string author,  string publisher, int yearOfPublication)
+    {
+        string email = HttpContext.Session.GetString("CurrentUser");
+
+
+        string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE email= @Email AND BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+        var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", bookTitle },
+                   { "@Author", author },
+                   { "@Publisher", publisher },
+                   { "@YearOfPublication", yearOfPublication }
+                };
+
+        // Create a connection to the database
+        ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+        int res = connection.ExecuteScalar<int>(query, parameters);
+
+        return res > 0;
+    }
+
+
+
+
+    public void RemoveUserFromWaitingList(string email, string bookTitle, string author,  string publisher, int yearOfPublication)
+    {
+
+
+        var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", bookTitle },
+                   { "@Author", author },
+                   { "@Publisher", publisher },
+                   { "@YearOfPublication", yearOfPublication }
+                };
+
+
+
+        // Query to get the PlaceInQueue for the user
+        string placeInQueueQuery = @"
+    SELECT PlaceInQueue 
+    FROM BorrowingBookWaitingList 
+    WHERE email = @Email 
+      AND BookTitle = @BookTitle 
+      AND Author = @Author 
+      AND Publisher = @Publisher 
+      AND YearOfPublication = @YearOfPublication";
+
+        // Mapper for PlaceInQueue
+        Func<SqlDataReader, int?> placeInQueueMapper = reader =>
+        {
+            return reader.IsDBNull(0) ? (int?)null : reader.GetInt32(0);
+        };
+
+        ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+        // Execute the query to get PlaceInQueue
+        List<int?> placeResults = connection.ExecuteQuery(placeInQueueQuery, parameters, placeInQueueMapper);
+
+        // Get the first PlaceInQueue value
+        int? placeInQueue = placeResults.FirstOrDefault();
+
+        // Delete the user from the waiting list
+        string deleteQuery = @"
+    DELETE FROM BorrowingBookWaitingList 
+    WHERE email = @Email 
+      AND BookTitle = @BookTitle 
+      AND Author = @Author 
+      AND Publisher = @Publisher 
+      AND YearOfPublication = @YearOfPublication";
+
+        connection.ExecuteNonQuery(deleteQuery, parameters);
+
+        // If PlaceInQueue is null, return
+        if (!placeInQueue.HasValue)
+        {
+            return;
+        }
+
+        // Update the PlaceInQueue for other users
+        string updateQuery;
+        var updateParameters = new Dictionary<string, object>
+    {
+        { "@BookTitle", bookTitle },
+        { "@Author", author },
+        { "@Publisher", publisher },
+        { "@YearOfPublication", yearOfPublication }
+    };
+
+        if (placeInQueue == 1)
+        {
+            updateQuery = @"
+        UPDATE BorrowingBookWaitingList 
+        SET PlaceInQueue = PlaceInQueue - 1 
+        WHERE BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
+        }
+        else
+        {
+            updateQuery = @"
+        UPDATE BorrowingBookWaitingList 
+        SET PlaceInQueue = PlaceInQueue - 1 
+        WHERE PlaceInQueue > @DeletedPlaceInQueue 
+          AND BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
+
+            updateParameters.Add("@DeletedPlaceInQueue", placeInQueue.Value);
+        }
+
+        connection.ExecuteNonQuery(updateQuery, updateParameters);
     }
 
 
@@ -193,15 +326,65 @@ public class CartController : Controller
                             ActionType = reader.GetString(4),
                             AddedDate = reader.GetDateTime(5),
                             PriceForBuy = reader.GetDecimal(6),
-                            PriceForBorrow = reader.GetDecimal(7)
+                            PriceForBorrow = reader.GetDecimal(7),
+                           
                         });
                     }
                 }
             }
         }
 
+
+        foreach(var cartItem in cartItems)
+        {
+            cartItem.BuyOnly= IsBookBuyOnly(cartItem.BookTitle, cartItem.Author, cartItem.Publisher, cartItem.YearOfPublication);
+        }
+
         return View("Cart",cartItems);
     }
+    
+
+
+   private bool IsBookBuyOnly(string BookTitle, string Author, string Publisher, int YearOfPublication)
+    {
+        string query = "SELECT BuyOnly FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+        var parameters = new Dictionary<string, object>
+              {
+                  
+                   { "@BookTitle", BookTitle },
+                   { "@Author", Author },
+                   { "@Publisher",Publisher },
+                   { "@YearOfPublication", YearOfPublication}
+                };
+
+        // Create a connection to the database
+        ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+        Func<SqlDataReader, bool?> mapper = reader =>
+       reader.IsDBNull(reader.GetOrdinal("BuyOnly"))
+           ? (bool?)null
+           : reader.GetBoolean(reader.GetOrdinal("BuyOnly"));
+
+        // Execute the query and get the result as a list
+        List<bool?> results = connection.ExecuteQuery(query, parameters, mapper);
+
+        // Get the first result, if available
+        bool? isBuyOnly = results.FirstOrDefault();
+
+        // Return true if BuyOnly is true; otherwise, false
+        return isBuyOnly.HasValue && isBuyOnly.Value;
+
+
+
+
+
+    }
+
+
+
+
+   
 
 
     [HttpPost]
@@ -265,6 +448,12 @@ public class CartController : Controller
                     connection1.ExecuteNonQuery(
                      query1, parameters);
 
+
+
+                    UpdateAboutNewAvailableBook(bookTitle, author, publisher, yearOfPublication);   //// עדכון 3 ראשונים ברשימת המתנה לספר על זה שהספר כעת זמין
+
+
+
                 }
                 else
                 {
@@ -278,6 +467,49 @@ public class CartController : Controller
 
         return RedirectToAction("ViewCart", "Cart");
     }
+
+
+
+    public void UpdateAboutNewAvailableBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
+    {
+
+        string query = "SELECT email FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication AND PlaceInQueue<4";
+
+        var parameters = new Dictionary<string, object>
+       {
+            { "@BookTitle", BookTitle },
+            { "@Author", Author },
+            { "@Publisher", Publisher },
+            { "@YearOfPublication", YearOfPublication }
+         };
+
+        // Create a connection to the database
+        ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+        var emails = connection.ExecuteQuery<string>(
+               query,
+               parameters,
+               reader => reader.GetString(0) // הנחה שהעמודה הראשונה היא האימייל
+           );
+
+
+        foreach (var email in emails)
+        {
+
+            Gmail gmail = new Gmail();
+
+            gmail.To = email;
+            gmail.Subject = "The book you have requested to borrow is currently available!!!";
+            gmail.Body = "Dear user " + email + " we are glad to inform you that the book " + BookTitle + " year " + YearOfPublication + ", by the author " + Author + " and publisher " + Publisher + " is available now for borrowing. Hurry and make the payment as soon as possible seeing as other users on the waiting list are being notified as well";
+
+            gmail.SendEmail();
+
+
+        }
+
+
+    }
+
 
 
 

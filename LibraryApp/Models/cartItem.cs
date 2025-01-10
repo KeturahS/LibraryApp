@@ -14,5 +14,8 @@
 
         public decimal PriceForBuy { get; set; }
         public decimal PriceForBorrow { get; set; }
+
+
+        public bool BuyOnly { get; set; }
     }
 }

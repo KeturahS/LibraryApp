@@ -88,6 +88,10 @@ namespace LibraryApp.Controllers
             {
                 string status = IsUserValid(model.email, model.Password);
 
+
+
+
+
                 if (status == "NonExistent")
                 {
                     TempData["ErrorMessage"] = "No account exists with the provided email. Please check your email or sign up for an account.";
@@ -100,7 +104,11 @@ namespace LibraryApp.Controllers
                     return View("SignIn", model);
                 }
 
-                if (status == "Admin" || status=="SuperAdmin")
+
+                UpdateIfBooksAreNoLongerOnSale();    ///////////עדכון המבצעים והגבלתם לכמות הימים שנבחרה לפני כניסת המשתמשים למערכת כדי שהכל יהיה מעודכן
+
+
+				if (status == "Admin" || status=="SuperAdmin")
                 {
                     HttpContext.Session.SetString("CurrentUser", model.email);
                     HttpContext.Session.SetString("Current user name", GetUser(model.email).FirstName);
@@ -122,7 +130,44 @@ namespace LibraryApp.Controllers
 
 
 
-        private User GetUser(string email)
+		private void UpdateIfBooksAreNoLongerOnSale()
+		{
+			// Query to update books where the sale period has ended
+			string query = @"
+        UPDATE Books 
+        SET 
+            IsOnSale = @IsOnSale,
+            DISCOUNTEDPriceForBorrow = @DISCOUNTEDPriceForBorrow,
+            DISCOUNTEDPriceForBuy = @DISCOUNTEDPriceForBuy,
+            SaleStartDate = @DefaultDate,
+            SaleEndDate = @DefaultDate,
+            AmountOfSaleDays = @AmountOfSaleDays
+        WHERE 
+            IsOnSale = 1 AND SaleEndDate < GETDATE()";
+
+			// Parameters to reset sale-related fields
+			var parameters = new Dictionary<string, object>
+	{
+		{ "@IsOnSale", false }, // Set IsOnSale to false
+        { "@DISCOUNTEDPriceForBorrow", -1 }, // Reset discounted price for borrow
+        { "@DISCOUNTEDPriceForBuy", -1 }, // Reset discounted price for buy
+        { "@DefaultDate", new DateTime(1753, 1, 1) }, // Default minimum date
+        { "@AmountOfSaleDays", 0 } // Reset sale days to 0
+    };
+
+			// Create a connection to the database
+			ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+			// Execute the query
+			int rowsAffected = connection.ExecuteNonQuery(query, parameters);
+
+			// Optional: Log or notify how many rows were updated
+			Console.WriteLine($"{rowsAffected} book(s) updated: Sale information cleared.");
+		}
+
+
+
+		private User GetUser(string email)
         {
             string query = "SELECT * FROM Users_tbl WHERE email = @email";
 
@@ -146,6 +191,8 @@ namespace LibraryApp.Controllers
 
             return user.FirstOrDefault();
         }
+
+
 
 
 
@@ -180,26 +227,28 @@ namespace LibraryApp.Controllers
                         {
                             books.Add(new Book
                             {
-                                BookTitle = reader.GetString(0),
-                                Author = reader.GetString(1),
-                                Publisher = reader.GetString(2),
-                                YearOfPublication = reader.GetInt32(3),
-                                Genre = reader.GetString(4),
-                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                PriceForBorrow = reader.GetDecimal(7),
-                                PriceForBuy = reader.GetDecimal(8),
-                                AgeRestriction = reader.GetString(9),
-                                IsOnSale = reader.GetBoolean(10),
-                               
-                                PDF = reader.GetBoolean(14),
-                                epub = reader.GetBoolean(15),
-                                f2b = reader.GetBoolean(16),
-                                mobi = reader.GetBoolean(17),
-                                Popularity = reader.GetInt32(18),
-                                ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
-                                BuyOnly = reader.GetBoolean(21)
+                                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                                Author = reader.GetString(reader.GetOrdinal("Author")),
+                                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                                Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                                PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                                PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                                AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                                IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                                AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                                SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                                SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                                PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                                epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                                f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                                mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                                Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                                ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                                BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
                             });
                         }
                     }
@@ -218,6 +267,13 @@ namespace LibraryApp.Controllers
 
             return View("UserPageUpdated", books);
         }
+
+
+
+
+        
+
+
 
         private string IsUserValid(string email, string password)
         {
@@ -275,25 +331,28 @@ namespace LibraryApp.Controllers
                         {
                             book = new Book
                             {
-                                BookTitle = reader.GetString(0),
-                                Author = reader.GetString(1),
-                                Publisher = reader.GetString(2),
-                                YearOfPublication = reader.GetInt32(3),
-                                Genre = reader.GetString(4),
-                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                PriceForBorrow = reader.GetDecimal(7),
-                                PriceForBuy = reader.GetDecimal(8),
-                                AgeRestriction = reader.GetString(9),
-                                IsOnSale = reader.GetBoolean(10),
-                                PDF = reader.GetBoolean(14),
-                                epub = reader.GetBoolean(15),
-                                f2b = reader.GetBoolean(16),
-                                mobi = reader.GetBoolean(17),
-                                Popularity = reader.GetInt32(18),
-                                ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
-                                BuyOnly = reader.GetBoolean(21)
+                                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                                Author = reader.GetString(reader.GetOrdinal("Author")),
+                                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                                Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                                PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                                PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                                AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                                IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                                AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                                SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                                SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                                PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                                epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                                f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                                mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                                Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                                ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                                BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
                             };
                         }
                     }
@@ -369,28 +428,30 @@ namespace LibraryApp.Controllers
                             books.Add(new Book
                             {
 
-                                BookTitle = reader.GetString(0),
-                                Author = reader.GetString(1),
-                                Publisher = reader.GetString(2),
-                                YearOfPublication = reader.GetInt32(3),
-                                Genre = reader.GetString(4),
-                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                PriceForBorrow = reader.GetDecimal(7),
-                                PriceForBuy = reader.GetDecimal(8),
-                                AgeRestriction = reader.GetString(9),
-                                IsOnSale = reader.GetBoolean(10),
+                                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                                Author = reader.GetString(reader.GetOrdinal("Author")),
+                                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                                Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                                PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                                PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                                AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                                IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                                AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                                SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                                SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                                PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                                epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                                f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                                mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                                Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                                ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                                BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
 
-                                PDF = reader.GetBoolean(14),
-                                epub = reader.GetBoolean(15),
-                                f2b = reader.GetBoolean(16),
-                                mobi = reader.GetBoolean(17),
-                                Popularity = reader.GetInt32(18),
-                                ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
-                                BuyOnly = reader.GetBoolean(21)
-
-							});
+                            });
                         }
                     }
                 }
@@ -443,28 +504,30 @@ namespace LibraryApp.Controllers
                             books.Add(new Book
                             {
 
-                                BookTitle = reader.GetString(0),
-                                Author = reader.GetString(1),
-                                Publisher = reader.GetString(2),
-                                YearOfPublication = reader.GetInt32(3),
-                                Genre = reader.GetString(4),
-                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                PriceForBorrow = reader.GetDecimal(7),
-                                PriceForBuy = reader.GetDecimal(8),
-                                AgeRestriction = reader.GetString(9),
-                                IsOnSale = reader.GetBoolean(10),
+                                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                                Author = reader.GetString(reader.GetOrdinal("Author")),
+                                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                                Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                                DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                                DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                                PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                                PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                                AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                                IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                                AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                                SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                                SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                                PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                                epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                                f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                                mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                                Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                                ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                                BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
 
-                                PDF = reader.GetBoolean(14),
-                                epub = reader.GetBoolean(15),
-                                f2b = reader.GetBoolean(16),
-                                mobi = reader.GetBoolean(17),
-                                Popularity = reader.GetInt32(18),
-                                ImageUrl = reader.GetString(19),
-                                AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
-								BuyOnly = reader.GetBoolean(21)
-
-							});
+                            });
                         }
                     }
                 }
@@ -564,27 +627,29 @@ namespace LibraryApp.Controllers
                             {
                                 books.Add(new Book
                                 {
-                                    BookTitle = reader.GetString(0),
-                                    Author = reader.GetString(1),
-                                    Publisher = reader.GetString(2),
-                                    YearOfPublication = reader.GetInt32(3),
-                                    Genre = reader.GetString(4),
-                                    DISCOUNTEDPriceForBorrow = reader.GetDecimal(5),
-                                    DISCOUNTEDPriceForBuy = reader.GetDecimal(6),
-                                    PriceForBorrow = reader.GetDecimal(7),
-                                    PriceForBuy = reader.GetDecimal(8),
-                                    AgeRestriction = reader.GetString(9),
-                                    IsOnSale = reader.IsDBNull(10) ? false : reader.GetBoolean(10),
-                                    PDF = reader.IsDBNull(14) ? false : reader.GetBoolean(14),
-                                    epub = reader.IsDBNull(15) ? false : reader.GetBoolean(15),
-                                    f2b = reader.IsDBNull(16) ? false : reader.GetBoolean(16),
-                                    mobi = reader.IsDBNull(17) ? false : reader.GetBoolean(17),
-
-                                    Popularity = reader.GetInt32(18),
-                                    ImageUrl = reader.GetString(19),
-                                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(20),
-                                    BuyOnly = reader.GetBoolean(21)
-								});
+                                    BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                                    Author = reader.GetString(reader.GetOrdinal("Author")),
+                                    Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                                    YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                                    Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                                    DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                                    DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                                    PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                                    PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                                    AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                                    IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                                    AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                                    SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                                    SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                                    PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                                    epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                                    f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                                    mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                                    Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                                    ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                                    BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
+                                });
                             }
                         
                        

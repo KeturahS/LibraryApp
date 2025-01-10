@@ -4,7 +4,12 @@
         <div class="p-3 bg-light border rounded shadow-sm">
             <form action="AddBook" method="POST">
 
-                <!-- Row 1 -->
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-info">
+                        @TempData["Message"]
+                    </div>
+                }
                 <div class="row">
                     <div class="col-md-6">
                         <label for="BookTitle" class="small">Book Title:</label>
@@ -16,7 +21,7 @@
                     </div>
                 </div>
 
-                <!-- Row 2 -->
+
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <label for="Publisher" class="small">Publisher:</label>
@@ -24,237 +29,295 @@
                     </div>
                     <div class="col-md-6">
                         <label for="YearOfPublication" class="small">Year of Publication:</label>
-                        <input type="number" id="YearOfPublication" name="YearOfPublication" class="form-control form-control-sm" value="@Model.YearOfPublication" min="1700" step="1">
+                        <input type="number" id="YearOfPublication" name="YearOfPublication" class="form-control form-control-sm" min="1700" step="1">
                     </div>
                 </div>
 
-                <!-- Row 3 -->
+               
                 <div class="row mt-3">
-                    <div class="col-md-6">
-                        <label for="Genre" class="small">Genre:</label>
-                        <select id="Genre" name="Genre" class="form-control form-control-sm">
-                            <option value="Fiction">Fiction</option>
-                            <option value="Non-Fiction">Non-Fiction</option>
-                            <option value="Mystery">Mystery</option>
-                            <option value="Fantasy">Fantasy</option>
-                            <option value="Science Fiction">Science Fiction</option>
-                            <option value="Romance">Romance</option>
-                            <option value="Biography">Biography</option>
-                            <option value="History">History</option>
-                            <option value="Poetry">Poetry</option>
-                        </select>
-                    </div>
+                        <div class="col-md-6">
+                            <label for="Genre" class="small">Genre:</label>
+                            <select id="Genre" name="Genre" class="form-control form-control-sm">
+                                <option value="Fiction">Fiction</option>
+                                <option value="Non-Fiction">Non-Fiction</option>
+                                <option value="Mystery">Mystery</option>
+                                <option value="Fantasy">Fantasy</option>
+                                <option value="Science Fiction">Science Fiction</option>
+                                <option value="Romance">Romance</option>
+                                <option value="Biography">Biography</option>
+                                <option value="History">History</option>
+                                <option value="Poetry">Poetry</option>
+                            </select>
+                        </div>
 
 
 
-                    <div class="col-md-6">
-                        <label for="Popularity" class="small">Popularity:</label>
-                        <select id="Popularity" name="Popularity" class="form-control form-control-sm">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
+                        <div class="col-md-6">
+                            <label for="Popularity" class="small">Popularity:</label>
+                            <select id="Popularity" name="Popularity" class="form-control form-control-sm">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                        </div>
 
 
 
-                    <div class="col-md-6">
-                        <label for="AvailableFormats" class="small">Available Formats:</label>
-                        <div class="form-control form-control-sm">
+                        <div class="col-md-6">
+                            <label for="AvailableFormats" class="small">Available Formats:</label>
+                            <div class="form-control form-control-sm">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="PDF" name="PDF" value="true">
+                                    <label class="form-check-label" for="PDF">PDF</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="epub" name="epub" value="true">
+                                    <label class="form-check-label" for="epub">epub</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="f2b" name="f2b" value="true">
+                                    <label class="form-check-label" for="f2b">f2b</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="mobi" name="mobi" value="true">
+                                    <label class="form-check-label" for="mobi">mobi</label>
+                                </div>
+                            </div>
+                        
+
+                    
+                        <div class="col-md-6">
+                            <label for="AgeRestriction" class="small">Age Restriction:</label>
+                            <select id="AgeRestriction" name="AgeRestriction" class="form-control form-control-sm">
+                                <option value="18+">18+</option>
+                                <option value="21+">21+</option>
+                                <option value="12+">12+</option>
+                                <option value="7+">7+</option>
+                                <option value="All Ages">All Ages</option>
+                            </select>
+                        </div>
+                  
+                </div>
+
+
+                        <div class="row mt-3">
+
+                        <div>
+                            <label class="small">Buy Only?</label>
+
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="PDF" name="PDF" value="true">
-                                <label class="form-check-label" for="PDF">PDF</label>
+                                <input type="radio" id="BuyOnlyNo" name="BuyOnly" class="form-check-input" value="false" onchange="DealWithBuyOnly()" checked>
+                                <label for="BuyOnlyNo" class="form-check-label">Not BUY ONLY</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="epub" name="epub" value="true">
-                                <label class="form-check-label" for="epub">epub</label>
+                                <input type="radio" id="BuyOnlyYes" name="BuyOnly" class="form-check-input" value="true" onchange="DealWithBuyOnly()">
+                                <label for="BuyOnlyYes" class="form-check-label">BUY ONLY</label>
+                            </div>
+
+                        </div>
+
+
+
+                        </div>
+
+
+                     
+                  
+
+
+
+                        <div class="row mt-3">
+
+                           <div class="col-md-6">
+										        <label for="PriceForBorrow" class="small"> Update Borrowing price: </label>
+										        <input type="text" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" onchange="validatePrices()"/>
+				           </div>
+
+                           <div class="col-md-6">
+							        <label for="PriceForBuy" class="small">Update Buying price:</label>
+									        <input type="text" id="PriceForBuy" name="PriceForBuy" class="form-control form-control-sm" value="@Model.PriceForBuy" onchange="validatePrices()" />
+					        </div>
+                    
+                        </div>
+
+
+                      <div class="col-md-3" >
+                        <div>
+                            <label class="small">Update Sale?</label>
+                            <div class="form-check">
+                                <input type="radio" id="UpdateSaleNo" name="UpdateSale" class="form-check-input" value="0" onchange="DealWitheDiscountFields()" checked>
+                                <label for="UpdateSaleNo" class="form-check-label">No Update</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="f2b" name="f2b" value="true">
-                                <label class="form-check-label" for="f2b">f2b</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="mobi" name="mobi" value="true">
-                                <label class="form-check-label" for="mobi">mobi</label>
+                                <input type="radio" id="UpdateSaleYes" name="UpdateSale" class="form-check-input" value="1" onchange="DealWitheDiscountFields()">
+                                <label for="UpdateSaleYes" class="form-check-label">Update Sale</label>
                             </div>
                         </div>
-                    </div>
 
-                    
-                    <div class="col-md-6">
-                        <label for="AgeRestriction" class="small">Age Restriction:</label>
-                        <select id="AgeRestriction" name="AgeRestriction" class="form-control form-control-sm">
-                            <option value="18+">18+</option>
-                            <option value="21+">21+</option>
-                            <option value="12+">12+</option>
-                            <option value="7+">7+</option>
-                            <option value="All Ages">All Ages</option>
-                        </select>
-                    </div>
-                  
-                </div>
+					    </div>
 
 
-                <div class="row mt-3">
 
-                    <div>
-                     
-                           <label for="isBuyOnly" class="small">BUY ONLY?</label>
-                        <select id="isBuyOnly" name="isBuyOnly" class="form-control form-control-sm" onchange="DealWithBuyOnly()">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
+
+
+
+
+                        <div class="col-md-3" id="SaleDurationContainer" >
+                            <label for="AmountOfSaleDays" class="small">Amount of days for the sale:</label>
+                            <select id="AmountOfSaleDays" name="AmountOfSaleDays" class="form-control form-control-sm" disabled>
+                              
+                                <option value="1">1 day</option>
+                                <option value="2">2 days</option>
+                                <option value="3">3 days</option>
+                                <option value="4">4 days</option>
+                                <option value="5">5 days</option>
+                                <option value="6">6 days</option>
+                                <option value="7">7 days</option>
                             </select>
-
-                    </div>
-
-
-                </div>
-
-
-                     
-                  
-
-
-
-                <!-- Row 4 -->
-                <div class="row mt-3">
-
-                    <div class="col-md-6">
-                        <label for="PriceForBorrow" class="small">Price for Borrow:</label>
-                        <input type="number" step="0.01" id="PriceForBorrow" name="PriceForBorrow" class="form-control form-control-sm" value="@Model.PriceForBorrow" min="0">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="PriceForBuy" class="small">Price for Buy:</label>
-                        <input type="number" step="0.01" id="PriceForBuy" name="PriceForBuy" class="form-control form-control-sm" value="@Model.PriceForBuy" min="0">
-                    </div>
-                    
-                </div>
-
-                <!-- Row 5 -->
-                <div class="row mt-3 align-items-center">
-                    <div class="col-md-3">
-                        <label for="IsOnSale" class="small">Is on Sale:</label>
-                        <select id="IsOnSale" name="IsOnSale" class="form-control form-control-sm" onchange="DealWithDiscountFields()">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                            </select>
-                    </div>
-
-
-
-                    <div class="col-md-3" id="SaleDurationContainer" >
-                        <label for="SaleDuration" class="small">Amount of days for the sale:</label>
-                        <select id="SaleDuration" name="SaleDuration" class="form-control form-control-sm" disabled>
-                            <option value="1">1 day</option>
-                            <option value="2">2 days</option>
-                            <option value="3">3 days</option>
-                            <option value="4">4 days</option>
-                            <option value="5">5 days</option>
-                            <option value="6">6 days</option>
-                            <option value="7">7 days</option>
-                        </select>
-                    </div>
+                        </div>
 
 
        
 
 
 
-                </div>
+                        </div>
 
-                    <div class="row mt-3 align-items-center">
-                        <div class="col-md-3">
-                        <label for="DISCOUNTEDPriceForBuy" class="small"> Discounted Price for Buy:</label>
-                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBuy" name="DISCOUNTEDPriceForBuy" class="form-control form-control-sm" disabled>
-                    </div>
+                            <div class="row mt-3 align-items-center">
+                                <div class="col-md-3">
+                                <label for="DISCOUNTEDPriceForBuy" class="small"> Discounted Price for Buy:</label>
+                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBuy" name="DISCOUNTEDPriceForBuy" class="form-control form-control-sm" onchange="validatePrices()" disabled>
+                            </div>
 
-                    <div class="col-md-3">
-                        <label for="DISCOUNTEDPriceForBorrow" class="small"> Discounted Price for Borrow:</label>
-                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" disabled>
-                    </div>
-                </div>
-
-
-
-            
-
-                <script>
-                    function DealWithDiscountFields() {
-                        const isOnSale = document.getElementById("IsOnSale").value;
-                        const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
-                        const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
-                        const SaleDurationField= document.getElementById("SaleDuration");
+                            <div class="col-md-3">
+                                <label for="DISCOUNTEDPriceForBorrow" class="small"> Discounted Price for Borrow:</label>
+                        <input type="number" step="0.01" id="DISCOUNTEDPriceForBorrow" name="DISCOUNTEDPriceForBorrow" class="form-control form-control-sm" onchange="validatePrices()" disabled>
+                            </div>
+                        </div>
 
 
-                        if (isOnSale === "1") {
-                            discountedBuyField.disabled = false;
-                            SaleDurationField.disabled= false;
-                            DealWithBuyOnly();                        
 
-
-                        } 
-                        else {
-                            discountedBuyField.disabled = true;
-                            discountedBuyField.value = ""; // Clear the field
-                            discountedBorrowField.disabled = true;
-                            discountedBorrowField.value = ""; // Clear the field
-                            SaleDurationField.disabled= true;
-                        }
-                    }
-                </script>
-
-                
                 <script>
                     function DealWithBuyOnly() {
-                        const isBuyOnly = document.getElementById("isBuyOnly").value;
-                        const BorrowField = document.getElementById("PriceForBorrow");
+                        const isBuyOnly = document.querySelector('input[name="BuyOnly"]:checked').value;
+                        const borrowField = document.getElementById("PriceForBorrow");
                         const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+                        const updateSale = document.querySelector('input[name="UpdateSale"]:checked').value;
+                        const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
+                        const saleDurationField = document.getElementById("AmountOfSaleDays");
 
-                        if (isBuyOnly === "1") {
-                            BorrowField.disabled = true;
+                        if (isBuyOnly === "true") { // Book is Buy Only
+                            borrowField.disabled = true;
+                            borrowField.value = "";
                             discountedBorrowField.disabled = true;
-                        } 
-                        else {
-                            BorrowField.disabled = false; 
-                            discountedBorrowField.disabled = false; 
+                            discountedBorrowField.value = "";
+                        } else { // Book is not Buy Only
+                            borrowField.disabled = false;
+                            DealWitheDiscountFields(); // Call to update the discount-related fields
                         }
-                    
+
+                        // If book is Buy Only and Update Sale is enabled, disable discountedBorrowField
+                        if (isBuyOnly === "true" && updateSale === "1") {
+                            discountedBorrowField.disabled = true;
+                            discountedBorrowField.value = "";
+                        }
+                    }
+                </script>
+
+                <script>
+                    function DealWitheDiscountFields() {
+                        const updateSale = document.querySelector('input[name="UpdateSale"]:checked').value;
+                        const discountedBuyField = document.getElementById("DISCOUNTEDPriceForBuy");
+                        const discountedBorrowField = document.getElementById("DISCOUNTEDPriceForBorrow");
+                        const buyOnlyValue = document.querySelector('input[name="BuyOnly"]:checked').value;
+                        const saleDurationField = document.getElementById("AmountOfSaleDays");
+
+                        if (updateSale === "1") {
+                            discountedBuyField.disabled = false;
+                            saleDurationField.disabled = false;
+
+                            if (buyOnlyValue === "true") { // Book is Buy Only
+                                discountedBorrowField.disabled = true;
+                                discountedBorrowField.value = "";
+                            } else {
+                                discountedBorrowField.disabled = false;
+                            }
+                        } else {
+                            discountedBuyField.disabled = true;
+                            discountedBorrowField.disabled = true;
+                            saleDurationField.disabled = true;
+
+                            if (buyOnlyValue === "true") { // Book is Buy Only
+                                discountedBorrowField.value = "";
+                            }
+                        }
                     }
                 </script>
 
 
+                        	<script>
+									function validatePrices() {
+										const priceForBuy = parseFloat(document.getElementById("PriceForBuy").value) || 0;
+										const priceForBorrow = parseFloat(document.getElementById("PriceForBorrow").value) || 0;
+										const discountedPriceForBuy = parseFloat(document.getElementById("DISCOUNTEDPriceForBuy").value) || 0;
+										const discountedPriceForBorrow = parseFloat(document.getElementById("DISCOUNTEDPriceForBorrow").value) || 0;
 
-                      
+										const priceForBuyField = document.getElementById("PriceForBuy");
+										const priceForBorrowField = document.getElementById("PriceForBorrow");
+
+										// Validate if the entered Buy price is lower than the discounted price
+										if (priceForBuy < discountedPriceForBuy && priceForBuy > 0) {
+											priceForBuyField.setCustomValidity("Buy price cannot be lower than the discounted price.");
+											priceForBuyField.reportValidity();  // Display validation message
+										} else {
+											priceForBuyField.setCustomValidity("");  // Clear validation message
+										}
+
+										// Validate if the entered Borrow price is lower than the discounted price
+										if (priceForBorrow < discountedPriceForBorrow && priceForBorrow > 0) {
+											priceForBorrowField.setCustomValidity("Borrow price cannot be lower than the discounted price.");
+											priceForBorrowField.reportValidity();  // Display validation message
+										} else {
+											priceForBorrowField.setCustomValidity("");  // Clear validation message
+										}
+									}
+								</script>
+
+
+                                     
               
 
 
-                <!-- Row 6 -->
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <label for="ImageUrl" class="small">Image URL:</label>
-                        <input type="url" id="ImageUrl" name="ImageUrl" class="form-control form-control-sm" value="@Model.ImageUrl">
-                    </div>
-                </div>
+               
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="ImageUrl" class="small">Image URL:</label>
+                                <input type="url" id="ImageUrl" name="ImageUrl" class="form-control form-control-sm" value="@Model.ImageUrl">
+                            </div>
+                        </div>
 
-                <!-- Submit Button -->
-                <div class="form-group text-center mt-4">
-                    <input type="submit" class="btn btn-primary btn-sm" value="ADD">
-                </div>
+
+
+               
+
+                        <!-- Submit Button -->
+                        <div class="form-group text-center mt-4">
+                            <input type="submit" class="btn btn-primary btn-sm" value="ADD">
+                        </div>
 
 
              
 
             </form>
         </div>
-    </div>
+   </div>
 </div>
 
 @if (TempData["BookAddedSuccessfully"] != null)

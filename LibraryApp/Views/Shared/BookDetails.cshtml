@@ -67,21 +67,63 @@
         @if (Model.BuyOnly == false)
             {
 
-                @if (Model.AvailableAmountOfCopiesToBorrow > 0 )
+            @if (Model.AvailableAmountOfCopiesToBorrow > 0  && TempData["Is it current user's turn to borrow"] == "yes" )
                 {
-                       <form method="post" action="/Cart/AddToCart">
+
+                    @if (Model.AvailableAmountOfCopiesToBorrow == 1 && TempData["Is current user on borrowing waiting list"] == "yes")
+                        {
+
+                            <form method="post" action="/Cart/AddToCart">
+                                <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
+                                <input type="hidden" name="author" value="@Model.Author" />
+                                <input type="hidden" name="publisher" value="@Model.Publisher" />
+                                <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+
+                                <!-- כפתור השאלה -->
+                                <input type="hidden" name="actionType" value="borrow" />
+                                <button type="submit" class="btn btn-warning mt-2">Borrow</button>
+                            </form>
+
+                            }
+
+                  @if (TempData["Is book on borrowing waiting list"] == "no")
+                    {
+                        <form method="post" action="/Cart/AddToCart">
+                            <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
+                            <input type="hidden" name="author" value="@Model.Author" />
+                            <input type="hidden" name="publisher" value="@Model.Publisher" />
+                            <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+
+                            <!-- כפתור השאלה -->
+                            <input type="hidden" name="actionType" value="borrow" />
+                            <button type="submit" class="btn btn-warning mt-2">Borrow</button>
+                        </form>
+
+                    }
+
+
+
+                @if (TempData["Is current user on borrowing waiting list"] == "no" && TempData["Is book on borrowing waiting list"] == "yes" && Model.AvailableAmountOfCopiesToBorrow == 1)
+                {
+                    <form method="post" action="/Admin/ShowBorrowingWaitingList">
                         <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
                         <input type="hidden" name="author" value="@Model.Author" />
                         <input type="hidden" name="publisher" value="@Model.Publisher" />
                         <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+                        <strong>Note:</strong> This book is currently unavailable for borrowing.
+                        <br />
 
-                        <!-- כפתור השאלה -->
-                        <input type="hidden" name="actionType" value="borrow" />
-                        <button type="submit" class="btn btn-warning mt-2">Borrow</button>
+                        <button type="submit" class="btn btn-warning mt-2">View Option to join borrowing waiting list</button>
                     </form>
+
                 }
 
-                else
+
+
+
+                }
+
+             else
 
                 {
           
@@ -101,7 +143,7 @@
                         </form>
                     }
 
-                    @if (TempData["Is current user on borrowing waiting list"] == "yes")
+                    @if (TempData["Is current user on borrowing waiting list"] == "yes" )
                     {
                         <form method="post" action="/Admin/ShowBorrowingWaitingList">
                             <input type="hidden" name="bookTitle" value="@Model.BookTitle" />
@@ -109,7 +151,7 @@
                             <input type="hidden" name="publisher" value="@Model.Publisher" />
                             <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
                             <strong>Note:</strong> You are on the waiting list for this book
-
+                        <br />
 
                             <button type="submit" class="btn btn-warning mt-2">View borrowing waiting list and further options</button>
                         </form>
@@ -119,9 +161,9 @@
             }
         }
 
-        else
+        @if(Model.BuyOnly==true)
             {
-            <h1>  <strong>THIS BOOK IS BUY ONLY:</strong>  </h1>
+            <h5>  <strong>THIS BOOK IS BUY ONLY:</strong>  </h5>
 
             <br />
             }

@@ -14,6 +14,8 @@ using System.Reflection.PortableExecutable;
 using System.Security.Policy;
 using static LibraryApp.Models.ConnectionToDBmodel;
 using PaypalServerSdk.Standard.Models;
+using System.Data.Common;
+using Stripe.Terminal;
 
 namespace LibraryApp.Controllers
 {
@@ -135,8 +137,18 @@ namespace LibraryApp.Controllers
                 ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
                 connection.ExecuteNonQuery(updateQuery, parameters);
 
+				Gmail gmail = new Gmail();
 
-            }
+				gmail.To = userId;
+				gmail.Subject = "Approved admin request";
+				gmail.Body = "Dear " + userId + ", unfortunately, we must inform you about being rejected as admin, you are welcome to try to sign up as a regular user instead.";
+
+				gmail.SendEmail();
+
+
+                action = "Delete";
+
+			}
 
 
             if (action == "Delete")
@@ -195,48 +207,7 @@ namespace LibraryApp.Controllers
 
 
 
-
-
-        //public List<Book> GetAllBooks()
-        //{
-        //    // SQL query to get all users except the current one
-        //    var updateQuery = "SELECT * FROM Books";
-
-        //    // Create a connection to the database
-        //    ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
-
-
-        //    var parameters = new Dictionary<string, object> { };
-
-        //    // Execute the query and map the results to a list of User objects
-        //    return connection.ExecuteQuery<Book>(
-        //     updateQuery, parameters, reader => new Book
-        //     {
-        //         // Map database columns to Book properties
-        //         BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
-        //         Author = reader.GetString(reader.GetOrdinal("Author")),
-        //         Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
-        //         YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
-        //         Genre = reader.GetString(reader.GetOrdinal("Genre")),
-        //         DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
-        //         DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
-        //         PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
-        //         PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
-        //         AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
-        //         IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
-        //         PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
-        //         epub = reader.GetBoolean(reader.GetOrdinal("epub")),
-        //         f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
-        //         mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
-        //         Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
-        //         ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl"))
-        //     }
-        //     );
-
-        //}
-
-
-
+        
 
         public IActionResult SendEmptyBook()
         {
@@ -251,7 +222,7 @@ namespace LibraryApp.Controllers
        
 
 
-        public IActionResult AddBook(Book book)
+        public IActionResult AddBook(Book book, bool BuyOnly)
         {
 
             string query = "SELECT COUNT(1) FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
@@ -322,14 +293,77 @@ namespace LibraryApp.Controllers
 
             }
 
+                        
 
 
-            var updateQuery = "INSERT INTO Books VALUES (@BookTitle, @Author, @Publisher, @YearOfPublication, @Genre, @DISCOUNTEDPriceForBorrow, @DISCOUNTEDPriceForBuy, @PriceForBorrow, @PriceForBuy, @AgeRestriction, @IsOnSale, @PDF, @epub, @f2b, @mobi, @Popularity, @ImageUrl, @AvailableAmountOfCopiesToBorrow, @BuyOnly)";
+            if (book.DISCOUNTEDPriceForBorrow < book.PriceForBorrow && book.DISCOUNTEDPriceForBorrow > 0)
+            {
+                book.IsOnSale = true;
 
+            }
+
+            if (book.DISCOUNTEDPriceForBuy < book.PriceForBuy && book.DISCOUNTEDPriceForBuy > 0)
+            {
+                book.IsOnSale = true;
+
+            }
+
+  
+
+            var updateQuery = @"
+    INSERT INTO Books (
+        BookTitle,
+        Author,
+        Publisher,
+        YearOfPublication,
+        Genre,
+        DISCOUNTEDPriceForBorrow,
+        DISCOUNTEDPriceForBuy,
+        PriceForBorrow,
+        PriceForBuy,
+        AgeRestriction,
+        IsOnSale,
+        AmountOfSaleDays,  
+        PDF,
+        epub,
+        f2b,
+        mobi,
+        Popularity,
+        ImageUrl,
+        AvailableAmountOfCopiesToBorrow,
+        BuyOnly
+        
+    )
+    VALUES (
+        @BookTitle,
+        @Author,
+        @Publisher,
+        @YearOfPublication,
+        @Genre,
+        @DISCOUNTEDPriceForBorrow,
+        @DISCOUNTEDPriceForBuy,
+        @PriceForBorrow,
+        @PriceForBuy,
+        @AgeRestriction,
+        @IsOnSale,
+        @AmountOfSaleDays,
+        @PDF,
+        @epub,
+        @f2b,
+        @mobi,
+        @Popularity,
+        @ImageUrl,
+        @AvailableAmountOfCopiesToBorrow,
+        @BuyOnly
+    );";
+
+
+			
             // Set up the parameters
 
             var parameters2 = new Dictionary<string, object>
                 {
+                   
                     { "@BookTitle", book.BookTitle },
                     { "@Author",  book.Author },
                     { "@Publisher",  book.Publisher },
@@ -341,15 +375,17 @@ namespace LibraryApp.Controllers
                     { "@PriceForBuy",  book.PriceForBuy },
                     { "@AgeRestriction",  book.AgeRestriction },
                     { "@IsOnSale",  book.IsOnSale },
+                    { "@AmountOfSaleDays",  book.AmountOfSaleDays },
                     { "@PDF", book.PDF },
                     { "@epub", book.epub },
                     { "@f2b", book.f2b },
                     { "@mobi", book.mobi },
                     { "@Popularity",  book.Popularity },
                     { "@ImageUrl",  book.ImageUrl },
-                    { "@AvailableAmountOfCopiesToBorrow",  book.AvailableAmountOfCopiesToBorrow },
-                    { "@BuyOnly",  book.BuyOnly },
-                };
+                    { "@AvailableAmountOfCopiesToBorrow",  3 },
+                    { "@BuyOnly", BuyOnly }
+                   					
+				};
 
 
             // Execute the query to insert the book
@@ -358,7 +394,34 @@ namespace LibraryApp.Controllers
                    parameters2
                );
 
-            TempData["BookAddedSuccessfully"] = "The Book" + @book.BookTitle + " you submitted has been added successfuly";
+
+			if (book.AmountOfSaleDays>0 && book.IsOnSale==true)
+			{
+				book.SaleStartDate = DateTime.Now;
+				book.SaleEndDate = DateTime.Now.AddDays(book.AmountOfSaleDays);
+
+				string query3 = "UPDATE Books SET SaleStartDate=@SaleStartDate, SaleEndDate=@SaleEndDate WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+				var parameters3 = new Dictionary<string, object>
+				{
+					{ "@SaleStartDate", book.SaleStartDate },
+					{ "@SaleEndDate",  book.SaleEndDate },
+                     { "@BookTitle", book.BookTitle },
+                    { "@Author",  book.Author },
+                    { "@Publisher",  book.Publisher },
+                    { "@YearOfPublication",  book.YearOfPublication }
+
+
+                };
+
+				connection.ExecuteNonQuery(
+				  query3,
+				  parameters3
+			  );
+
+			}
+
+
+			TempData["BookAddedSuccessfully"] = "The Book " + book.BookTitle + " you submitted has been added successfuly";
 
 
 
@@ -391,28 +454,32 @@ namespace LibraryApp.Controllers
             connection.ExecuteQuery<Book>(
              query, parameters, reader => new Book
              {
-                 // Map database columns to Book properties
-                 BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
-                 Author = reader.GetString(reader.GetOrdinal("Author")),
-                 Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
-                 YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
-                 Genre = reader.GetString(reader.GetOrdinal("Genre")),
-                 DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
-                 DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
-                 PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
-                 PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
-                 AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
-                 IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
-                 PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
-                 epub = reader.GetBoolean(reader.GetOrdinal("epub")),
-                 f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
-                 mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
-                 Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
-                 ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
-                 AvailableAmountOfCopiesToBorrow= reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
-                 BuyOnly= reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
-             }
-             );
+				 // Map database columns to Book properties
+				 BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+				 Author = reader.GetString(reader.GetOrdinal("Author")),
+				 Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+				 YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+				 Genre = reader.GetString(reader.GetOrdinal("Genre")),
+				 DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+				 DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+				 PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+				 PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+				 AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+				 IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+				 AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+				 SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+				 SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+				 PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+				 epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+				 f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+				 mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+				 Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+				 ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+				 AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+				 BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
+
+			 }
+			 );
 
 
             SetAdminPage();
@@ -462,36 +529,40 @@ namespace LibraryApp.Controllers
             var books = connection.ExecuteQuery<Book>(
                 query, parameters, reader => new Book
                 {
-                    BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
-                    Author = reader.GetString(reader.GetOrdinal("Author")),
-                    Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
-                    YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
-                    Genre = reader.GetString(reader.GetOrdinal("Genre")),
-                    DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
-                    DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
-                    PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
-                    PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
-                    AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
-                    IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
-                    PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
-                    epub = reader.GetBoolean(reader.GetOrdinal("epub")),
-                    f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
-                    mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
-                    Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
-                    ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
-                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
-                    BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
+					BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+					Author = reader.GetString(reader.GetOrdinal("Author")),
+					Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+					YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+					Genre = reader.GetString(reader.GetOrdinal("Genre")),
+					DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+					DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+					PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+					PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+					AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+					IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+					AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+					SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+					SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+					PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+					epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+					f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+					mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+					Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+					ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+					AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+					BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
 
-                }
-            );
+
+				}
+			);
 
 
             return books.FirstOrDefault();
         }
 
 
-        public IActionResult UpdateBook(string BookTitle, string Author, string Publisher, int YearOfPublication, decimal PriceForBorrow, decimal PriceForBuy, decimal DISCOUNTEDPriceForBorrow, decimal DISCOUNTEDPriceForBuy, bool PDF, bool epub, bool f2b, bool mobi)
-        {
+        public IActionResult UpdateBook(string BookTitle, string Author, string Publisher, int YearOfPublication, decimal PriceForBorrow, decimal PriceForBuy, decimal DISCOUNTEDPriceForBorrow, decimal DISCOUNTEDPriceForBuy, bool PDF, bool epub, bool f2b, bool mobi, string AgeRestriction, bool IsOnSale, int AmountOfSaleDays, int Popularity, bool BuyOnly)
+            {
             Book book = GetBook(BookTitle, Author, Publisher, YearOfPublication);
             bool OnSALE = false;
 
@@ -558,24 +629,29 @@ namespace LibraryApp.Controllers
 
 
 
-            string query = "UPDATE Books SET PriceForBorrow = @PriceForBorrow, PriceForBuy = @PriceForBuy, DISCOUNTEDPriceForBorrow= @DISCOUNTEDPriceForBorrow, DISCOUNTEDPriceForBuy=@DISCOUNTEDPriceForBuy, IsOnSale = @IsOnSale, PDF = @PDF, epub = @epub, f2b = @f2b, mobi= @mobi WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+            string query = "UPDATE Books SET PriceForBorrow = @PriceForBorrow, PriceForBuy = @PriceForBuy, DISCOUNTEDPriceForBorrow= @DISCOUNTEDPriceForBorrow, DISCOUNTEDPriceForBuy=@DISCOUNTEDPriceForBuy, IsOnSale = @IsOnSale, PDF = @PDF, epub = @epub, f2b = @f2b, mobi= @mobi, AgeRestriction=@AgeRestriction, AmountOfSaleDays=@AmountOfSaleDays, Popularity=@Popularity WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
 
             var parameters = new Dictionary<string, object>
               {
-                   { "@BookTitle", BookTitle },
-                   { "@Author",  Author },
-                   { "@Publisher",  Publisher },
-                   { "@YearOfPublication",  YearOfPublication },
-                   { "@DISCOUNTEDPriceForBorrow", DISCOUNTEDPriceForBorrow },
-                   { "@DISCOUNTEDPriceForBuy", DISCOUNTEDPriceForBuy },
-                   { "@PriceForBorrow", PriceForBorrow },
-                   { "@PriceForBuy",  PriceForBuy },
-                   { "@IsOnSale",  OnSALE },
-                   { "@PDF", PDF },
-                   { "@epub", epub },
-                   { "@f2b", f2b },
-                   { "@mobi", mobi }
-                };
+
+					{ "@BookTitle", BookTitle },
+					{ "@Author",  Author },
+					{ "@Publisher", Publisher },
+					{ "@YearOfPublication", YearOfPublication },
+					{ "@DISCOUNTEDPriceForBorrow", DISCOUNTEDPriceForBorrow },
+					{ "@DISCOUNTEDPriceForBuy",DISCOUNTEDPriceForBuy },
+					{ "@PriceForBorrow", PriceForBorrow },
+					{ "@PriceForBuy",  PriceForBuy },
+					{ "@AgeRestriction",  AgeRestriction },
+					{ "@IsOnSale",  IsOnSale },
+					{ "@AmountOfSaleDays",  AmountOfSaleDays },
+					{ "@PDF", PDF },
+					{ "@epub", epub },
+					{ "@f2b", f2b },
+					{ "@mobi", mobi },
+					{ "@Popularity",  Popularity },
+					{ "@BuyOnly", BuyOnly }
+				};
 
             // Create a connection to the database
             ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
@@ -660,6 +736,31 @@ namespace LibraryApp.Controllers
         }
 
 
+
+        public bool IsBookOnWaitingList(Book book)
+        {
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+
+            string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", book.BookTitle },
+                   { "@Author", book.Author },
+                   { "@Publisher", book.Publisher },
+                   { "@YearOfPublication", book.YearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+            int res = connection.ExecuteScalar<int>(query, parameters);
+
+            return res > 0;
+        }
     
 
         public bool IsUserOnWaitingList(Book book)
@@ -692,19 +793,111 @@ namespace LibraryApp.Controllers
         public IActionResult ShowBookDetails(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
         {
             Book book = GetBook(bookTitle, author, publisher, yearOfPublication);
+            bool isBookOnWaitingList = IsBookOnWaitingList(book);
+
+
+            if (isBookOnWaitingList)
+            {
+                TempData["Is book on borrowing waiting list"] = "yes";
+
+
+            }
+            else
+            {
+                TempData["Is book on borrowing waiting list"] = "no";
+            }
             bool ans = IsUserOnWaitingList( book);
+          
 
             if (ans)
             {
                 TempData["Is current user on borrowing waiting list"] = "yes";
+
+                bool ans2 = IsItUserTurnToBorrow(book);
+
+                if (ans2)
+                {
+                    TempData["Is it current user's turn to borrow"] = "yes";
+                }
+                else
+                    TempData["Is it current user's turn to borrow"] = "no";
             }
             else
+            {
                 TempData["Is current user on borrowing waiting list"] = "no";
 
 
-           return View("BookDetails", book);
+                TempData["Is it current user's turn to borrow"] = "yes";
+            }
+
+            return View("BookDetails", book);
 
         }
+
+
+        public bool IsItUserTurnToBorrow(Book book)
+        {
+            // Get the current user's email from the session
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+            // Return false if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return false;
+            }
+
+            // SQL query to check the user's place in the queue
+            string query = @"
+    SELECT PlaceInQueue 
+    FROM BorrowingBookWaitingList 
+    WHERE email = @Email 
+      AND BookTitle = @BookTitle 
+      AND Author = @Author 
+      AND Publisher = @Publisher 
+      AND YearOfPublication = @YearOfPublication";
+
+            // Set up parameters
+            var parameters = new Dictionary<string, object>
+    {
+        { "@Email", email },
+        { "@BookTitle", book.BookTitle },
+        { "@Author", book.Author },
+        { "@Publisher", book.Publisher },
+        { "@YearOfPublication", book.YearOfPublication }
+    };
+
+            // Create a database connection
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            // Define a mapper function to extract PlaceInQueue from the SqlDataReader
+            Func<SqlDataReader, int?> mapper = reader =>
+            {
+                // Check for null and return PlaceInQueue as a nullable integer
+                return reader.IsDBNull(reader.GetOrdinal("PlaceInQueue"))
+                    ? (int?)null
+                    : reader.GetInt32(reader.GetOrdinal("PlaceInQueue"));
+            };
+
+            // Execute the query and get the result as a list of integers (or nullable integers)
+            List<int?> results = connection.ExecuteQuery(query, parameters, mapper);
+
+            // Get the first result (if any)
+            int? placeInQueue = results.FirstOrDefault();
+
+            // Check if the user is not in the waiting list
+            if (!placeInQueue.HasValue)
+            {
+                return false;
+            }
+
+            // Return true if the user's position is 1, 2, or 3; otherwise, return false
+            return placeInQueue.Value >= 1 && placeInQueue.Value <= 3;
+        }
+
+
+
+
+
 
 
         public IActionResult ShowBorrowingWaitingList(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
@@ -740,7 +933,12 @@ namespace LibraryApp.Controllers
             model.IsCurrentUserOnList = ans;
 
             model.ExpectedDaysUntilBookAvailable= AmountOfDaysTillBookAvailable(book);
-           
+
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+            ViewBag.Email = email;
+
+
             return View("BorrowingWaitingList", model);
 
         }
@@ -836,16 +1034,15 @@ namespace LibraryApp.Controllers
         }
 
 
-
-        public IActionResult RemoveUserFromWaitingList(string Author, string BookTitle, string Publisher, int YearOfPublication)
+        
+        public IActionResult RemoveUserFromWaitingList(string email, string Author, string BookTitle, string Publisher, int YearOfPublication)
         {
             var getPlaceInQueueQuery= "SELECT PlaceInQueue FROM BorrowingBookWaitingList WHERE email= @email AND BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";      
             
-            String Email = HttpContext.Session.GetString("CurrentUser");
-
+            
 
             var parameters = new Dictionary<string, object>{
-                   { "@email", Email},
+                   { "@email", email},
                    { "@BookTitle", BookTitle },
                    { "@Author",  Author },
                    { "@Publisher",Publisher },
@@ -900,71 +1097,49 @@ namespace LibraryApp.Controllers
         }
 
 
-
-
-        public IActionResult UpdateAboutNewAvailableBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
+        public void SendBorrowingReminders()
         {
+            // SQL query to find borrowed books that are due in 5 days
+            string query = @"
+                SELECT UserName, BookTitle, ReturnDate, Email
+                FROM BorrowedBooks
+                WHERE DATEDIFF(DAY, GETDATE(), ReturnDate) = 5";
 
-            string query = "SELECT email FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication AND PlaceInQueue<4";
-
-            var parameters = new Dictionary<string, object>
-              {
-                   { "@BookTitle", BookTitle },
-                   { "@Author", Author },
-                   { "@Publisher", Publisher },
-                   { "@YearOfPublication", YearOfPublication }
-                };
-
-            // Create a connection to the database
             ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
 
-            var emails = connection.ExecuteQuery<string>(
-                   query,
-                   parameters,
-                   reader => reader.GetString(0) // הנחה שהעמודה הראשונה היא האימייל
-               );
-
-
-            foreach (var email in emails)
+            // Execute the query and get the results
+            var usersToRemind = connection.ExecuteQuery<BorrowedBook>(query, null, reader => new BorrowedBook
             {
+                UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                Author = reader.GetString(reader.GetOrdinal("Author")),
+                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                ReturnDate = reader.GetDateTime(reader.GetOrdinal("ReturnDate")),
+                BorrowID = reader.GetInt32(reader.GetOrdinal("BorrowID")),
+            });
 
-                Gmail gmail = new Gmail();
+            // Send email reminder for each borrowed book
+            foreach (var item in usersToRemind)
+            {
+                // Send reminder only for borrowed books with remaining days == 5
+                if (item.RemainingDays == 5)
+                {
 
-                gmail.To = email;
-                gmail.Subject = "The book you have requested to borrow is currently available!!!";
-                gmail.Body = "Dear user " + email + " we are glad to inform you that the book "+ BookTitle+" year "+ YearOfPublication+ ", by the author "+ Author+ " and publisher "+Publisher+ " is available now for borrowing. Hurry and make the payment as soon as possible seeing as other users on the waiting list are being notified as well";
+                    Gmail gmail = new Gmail();
 
-                gmail.SendEmail();
+                    gmail.To = item.UserName;
+                    gmail.Subject = "Reminder: Your book borrowing period is ending soon!";
+                    gmail.Body = $"Dear {item.UserName},\n\nThis is a reminder that the book '{item.BookTitle}' you borrowed is due to be returned in 5 days. Please make sure to return it on time.\n\nThank you.";
 
+                    gmail.SendEmail();
 
+                }
             }
 
-
-
-            return RedirectToAction("ViewCart", "Car"); ////צריך לטפל ביעד הזה כי זה לא מוביל למקום כלשהו
-
+         
         }
-
-
-
-        public IActionResult UpdateAboutSuccssefulPayment(string email)
-
-        {
-
-
-            return RedirectToAction("ViewCart", "Car");
-        }
-
-
-
-
-
-    };
-
-
-
-
-
+    }
 
 }
 
