@@ -6,6 +6,12 @@
 
 
 <div class="container mt-4">
+
+    <h1 class="text-center welcome-text">
+        Welcome to the Admin Dashboard of eBook Library
+    </h1>
+
+
     <div class="marquee mb-4 p-2 rounded">
         <marquee>
             Manage book formats, prices, availability, and user registrations with ease!
@@ -281,12 +287,30 @@
                                                         @book.BuyOnly
                                                     </td>
 
-                                                    <td> @book.AmountOfSaleDays</td>
 
+                                                    @if(book.IsOnSale)
+                                                 {   <td> @book.AmountOfSaleDays</td>
+
+
+                                                
                                                     <td> @book.SaleStartDate</td>
                                                    
-                                                    <td> @book.SaleEndDate</td>
+                                                <td> @book.SaleEndDate</td>
+                                            }
 
+                                            else
+                                            {
+                                                <td> NO SALE</td>
+
+
+                                                <td> NO SALE</td>
+
+
+                                                <td> NO SALE</td>
+
+
+                                                
+                                            }
 
                                                     <td>
                                                         <form action="/Admin/ActionsForSelectedBook" method="post" class="d-inline">

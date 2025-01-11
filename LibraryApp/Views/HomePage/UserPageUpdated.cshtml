@@ -9,9 +9,13 @@
     <div class="text-center mb-5">
 
             <h1 class="text-center welcome-text">
-                Welcome <span class="user-name"> @ViewBag.UserName </span> to eBook Library
+                Welcome <span class="user-name"> @ViewBag.FirstName </span> to eBook Library
             </h1>
 
+
+            <p class="book-count text-muted">
+                Total books available: <strong>@ViewBag.BookCount</strong>
+            </p>
 
 
             <a href="/Payment/CreditCardPaymentPage" class="btn btn-success btn-lg">

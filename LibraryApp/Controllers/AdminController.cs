@@ -643,7 +643,7 @@ namespace LibraryApp.Controllers
 					{ "@PriceForBorrow", PriceForBorrow },
 					{ "@PriceForBuy",  PriceForBuy },
 					{ "@AgeRestriction",  AgeRestriction },
-					{ "@IsOnSale",  IsOnSale },
+					{ "@IsOnSale",  OnSALE },
 					{ "@AmountOfSaleDays",  AmountOfSaleDays },
 					{ "@PDF", PDF },
 					{ "@epub", epub },
@@ -668,7 +668,34 @@ namespace LibraryApp.Controllers
 
 
 
-            return View("ActionsForSelectedBook", book1);
+			if (book1.AmountOfSaleDays > 0 && book1.IsOnSale == true)
+			{
+				book1.SaleStartDate = DateTime.Now;
+				book1.SaleEndDate = DateTime.Now.AddDays(book1.AmountOfSaleDays);
+
+				string query3 = "UPDATE Books SET SaleStartDate=@SaleStartDate, SaleEndDate=@SaleEndDate WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+				var parameters3 = new Dictionary<string, object>
+				{
+					{ "@SaleStartDate", book1.SaleStartDate },
+					{ "@SaleEndDate",  book1.SaleEndDate },
+					 { "@BookTitle", book1.BookTitle },
+					{ "@Author",  book1.Author },
+					{ "@Publisher",  book1.Publisher },
+					{ "@YearOfPublication",  book1.YearOfPublication }
+
+
+				};
+
+				connection.ExecuteNonQuery(
+				  query3,
+				  parameters3
+			  );
+
+			}
+
+
+
+			return View("ActionsForSelectedBook", book1);
 
 
         }
@@ -715,6 +742,18 @@ namespace LibraryApp.Controllers
 
         public IActionResult DeleteBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
         {
+			ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+			// בדיקת כמות ספרים בספרייה
+			var countQuery = "SELECT COUNT(*) FROM Books";
+            int totalBooks = connection.ExecuteScalar<int>(countQuery, new Dictionary<string, object>());
+
+            // Step 2: Prevent deletion if the count is less than or equal to 25
+            if (totalBooks <= 25)
+            {
+                TempData["ERRORdelete"] = "Cannot delete the book. The library must have at least 25 books.";
+                return View("ActionsForSelectedBook", GetBook(BookTitle, Author, Publisher, YearOfPublication));
+            }
 
 
             var updateQuery = "DELETE FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
@@ -725,8 +764,8 @@ namespace LibraryApp.Controllers
                    { "@Publisher",  Publisher },
                    { "@YearOfPublication",  YearOfPublication }};
 
-            // Execute the update using ExecuteQuery
-            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+       
+          
             connection.ExecuteNonQuery(updateQuery, parameters);
 
             TempData["MESSAGEdelete"] = "Book has been deleted successfuly";
@@ -790,49 +829,49 @@ namespace LibraryApp.Controllers
 
 
 
-        public IActionResult ShowBookDetails(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
-        {
-            Book book = GetBook(bookTitle, author, publisher, yearOfPublication);
-            bool isBookOnWaitingList = IsBookOnWaitingList(book);
+        //public IActionResult ShowBookDetails(string bookTitle, string author, string publisher, int yearOfPublication, bool isOnWaitingList)
+        //{
+        //    Book book = GetBook(bookTitle, author, publisher, yearOfPublication);
+        //    bool isBookOnWaitingList = IsBookOnWaitingList(book);
 
 
-            if (isBookOnWaitingList)
-            {
-                TempData["Is book on borrowing waiting list"] = "yes";
+        //    if (isBookOnWaitingList)
+        //    {
+        //        TempData["Is book on borrowing waiting list"] = "yes";
 
 
-            }
-            else
-            {
-                TempData["Is book on borrowing waiting list"] = "no";
-            }
-            bool ans = IsUserOnWaitingList( book);
+        //    }
+        //    else
+        //    {
+        //        TempData["Is book on borrowing waiting list"] = "no";
+        //    }
+        //    bool ans = IsUserOnWaitingList( book);
           
 
-            if (ans)
-            {
-                TempData["Is current user on borrowing waiting list"] = "yes";
+        //    if (ans)
+        //    {
+        //        TempData["Is current user on borrowing waiting list"] = "yes";
 
-                bool ans2 = IsItUserTurnToBorrow(book);
+        //        bool ans2 = IsItUserTurnToBorrow(book);
 
-                if (ans2)
-                {
-                    TempData["Is it current user's turn to borrow"] = "yes";
-                }
-                else
-                    TempData["Is it current user's turn to borrow"] = "no";
-            }
-            else
-            {
-                TempData["Is current user on borrowing waiting list"] = "no";
+        //        if (ans2)
+        //        {
+        //            TempData["Is it current user's turn to borrow"] = "yes";
+        //        }
+        //        else
+        //            TempData["Is it current user's turn to borrow"] = "no";
+        //    }
+        //    else
+        //    {
+        //        TempData["Is current user on borrowing waiting list"] = "no";
 
 
-                TempData["Is it current user's turn to borrow"] = "yes";
-            }
+        //        TempData["Is it current user's turn to borrow"] = "yes";
+        //    }
 
-            return View("BookDetails", book);
+        //    return View("BookDetails", book);
 
-        }
+        //}
 
 
         public bool IsItUserTurnToBorrow(Book book)
@@ -1097,48 +1136,7 @@ namespace LibraryApp.Controllers
         }
 
 
-        //public void SendBorrowingReminders()
-        //{
-        //    // SQL query to find borrowed books that are due in 5 days
-        //    string query = @"
-        //        SELECT UserName, BookTitle, ReturnDate, Email
-        //        FROM BorrowedBooks
-        //        WHERE DATEDIFF(DAY, GETDATE(), ReturnDate) = 5";
-
-        //    ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
-
-        //    // Execute the query and get the results
-        //    var usersToRemind = connection.ExecuteQuery<BorrowedBook>(query, null, reader => new BorrowedBook
-        //    {
-        //        UserName = reader.GetString(reader.GetOrdinal("UserName")),
-        //        BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
-        //        Author = reader.GetString(reader.GetOrdinal("Author")),
-        //        Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
-        //        YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
-        //        ReturnDate = reader.GetDateTime(reader.GetOrdinal("ReturnDate")),
-        //        BorrowID = reader.GetInt32(reader.GetOrdinal("BorrowID")),
-        //    });
-
-        //    // Send email reminder for each borrowed book
-        //    foreach (var item in usersToRemind)
-        //    {
-        //        // Send reminder only for borrowed books with remaining days == 5
-        //        if (item.RemainingDays == 5)
-        //        {
-
-        //            Gmail gmail = new Gmail();
-
-        //            gmail.To = item.UserName;
-        //            gmail.Subject = "Reminder: Your book borrowing period is ending soon!";
-        //            gmail.Body = $"Dear {item.UserName},\n\nThis is a reminder that the book '{item.BookTitle}' you borrowed is due to be returned in 5 days. Please make sure to return it on time.\n\nThank you.";
-
-        //            gmail.SendEmail();
-
-        //        }
-        //    }
-
-         
-        //}
+      
     }
 
 

@@ -35,6 +35,14 @@ namespace LibraryApp.Controllers
         {
             if (ModelState.IsValid)
             {
+
+                if (DoesEmailExist(user.email))
+                {
+                    ModelState.AddModelError("Email", "Email is already taken. Please use a different email.");
+                    return View("SignUp", user);
+                }
+
+
                 using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
@@ -76,6 +84,27 @@ namespace LibraryApp.Controllers
 
             return View("SignUp", user);
         }
+
+
+
+        private bool DoesEmailExist(string email)
+        {
+            // יצירת אובייקט של המחלקה שמחברת למסד הנתונים
+            var dbHelper = new ConnectionToDBmodel.ConnectionToDBModel(_configuration);
+
+            // שאילתת SQL לבדיקה אם האימייל כבר קיים
+            string query = "SELECT COUNT(*) FROM Users_tbl WHERE Email = @Email";
+            var parameters = new Dictionary<string, object>
+    {
+        { "@Email", email }
+    };
+
+            // החזרת תוצאה (true אם קיים, אחרת false)
+            return dbHelper.ExecuteScalar<int>(query, parameters) > 0;
+        }
+
+
+
 
         public IActionResult SignIn()
         {
@@ -265,15 +294,56 @@ namespace LibraryApp.Controllers
            
             ViewBag.SearchQuery = searchQuery;
 
-            
+            string firstName = GetUserFirstName(userName);
+
+            ViewBag.FirstName=firstName;
+
+            int bookCount = AmountOfBooksInDB();
+            ViewBag.BookCount = bookCount;
 
             return View("UserPageUpdated", books);
         }
 
 
 
+        public int AmountOfBooksInDB()
+        {
+            
+            var dbHelper = new ConnectionToDBmodel.ConnectionToDBModel(_configuration);
 
-        
+            
+            string query = "SELECT COUNT(*) FROM Books";
+            var totalBooks = dbHelper.ExecuteScalar<int>(query, new Dictionary<string, object>());
+         
+
+            return totalBooks;
+
+
+        }
+
+
+
+
+        private string GetUserFirstName(string email)
+        {
+            // Create an instance of the database helper
+            var dbHelper = new ConnectionToDBmodel.ConnectionToDBModel(_configuration);
+
+            // Define the SQL query
+            string query = "SELECT FirstName FROM Users_tbl WHERE Email = @Email";
+
+            // Define the parameters for the query
+            var parameters = new Dictionary<string, object>
+    {
+        { "@Email", email }
+    };
+
+            // Execute the query and return the result
+            return dbHelper.ExecuteScalar<string>(query, parameters);
+        }
+
+
+
 
 
 
@@ -403,10 +473,220 @@ WHERE RTRIM(LTRIM(BookTitle)) = RTRIM(LTRIM(@BookTitle))
             // העברת הספר והפידבקים ל-View
             ViewBag.Feedbacks = feedbacks;
 
-            
+
+            bool isBookOnWaitingList = IsBookOnWaitingList(book);
+
+
+            if (isBookOnWaitingList)
+            {
+                TempData["Is book on borrowing waiting list"] = "yes";
+
+
+            }
+            else
+            {
+                TempData["Is book on borrowing waiting list"] = "no";
+            }
+            bool ans = IsUserOnWaitingList(book);
+
+
+            if (ans)
+            {
+                TempData["Is current user on borrowing waiting list"] = "yes";
+
+                bool ans2 = IsItUserTurnToBorrow(book);
+
+                if (ans2)
+                {
+                    TempData["Is it current user's turn to borrow"] = "yes";
+                }
+                else
+                    TempData["Is it current user's turn to borrow"] = "no";
+            }
+            else
+            {
+                TempData["Is current user on borrowing waiting list"] = "no";
+
+
+                TempData["Is it current user's turn to borrow"] = "yes";
+            }
+
+
+
+
+
 
             return View("BookDetails",book);
         }
+
+
+
+        public bool IsItUserTurnToBorrow(Book book)
+        {
+            // Get the current user's email from the session
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+            // Return false if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return false;
+            }
+
+            // SQL query to check the user's place in the queue
+            string query = @"
+    SELECT PlaceInQueue 
+    FROM BorrowingBookWaitingList 
+    WHERE email = @Email 
+      AND BookTitle = @BookTitle 
+      AND Author = @Author 
+      AND Publisher = @Publisher 
+      AND YearOfPublication = @YearOfPublication";
+
+            // Set up parameters
+            var parameters = new Dictionary<string, object>
+    {
+        { "@Email", email },
+        { "@BookTitle", book.BookTitle },
+        { "@Author", book.Author },
+        { "@Publisher", book.Publisher },
+        { "@YearOfPublication", book.YearOfPublication }
+    };
+
+            // Create a database connection
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            // Define a mapper function to extract PlaceInQueue from the SqlDataReader
+            Func<SqlDataReader, int?> mapper = reader =>
+            {
+                // Check for null and return PlaceInQueue as a nullable integer
+                return reader.IsDBNull(reader.GetOrdinal("PlaceInQueue"))
+                    ? (int?)null
+                    : reader.GetInt32(reader.GetOrdinal("PlaceInQueue"));
+            };
+
+            // Execute the query and get the result as a list of integers (or nullable integers)
+            List<int?> results = connection.ExecuteQuery(query, parameters, mapper);
+
+            // Get the first result (if any)
+            int? placeInQueue = results.FirstOrDefault();
+
+            // Check if the user is not in the waiting list
+            if (!placeInQueue.HasValue)
+            {
+                return false;
+            }
+
+            // Return true if the user's position is 1, 2, or 3; otherwise, return false
+            return placeInQueue.Value >= 1 && placeInQueue.Value <= 3;
+        }
+
+
+
+        public bool IsBookOnWaitingList(Book book)
+        {
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+
+            string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", book.BookTitle },
+                   { "@Author", book.Author },
+                   { "@Publisher", book.Publisher },
+                   { "@YearOfPublication", book.YearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+            int res = connection.ExecuteScalar<int>(query, parameters);
+
+            return res > 0;
+        }
+
+        public bool IsUserOnWaitingList(Book book)
+        {
+            string email = HttpContext.Session.GetString("CurrentUser");
+
+
+            string query = "SELECT COUNT(1) FROM BorrowingBookWaitingList WHERE email= @Email AND BookTitle = @BookTitle AND Author = @Author AND Publisher= @Publisher AND YearOfPublication= @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+              {
+                   { "@Email", email },
+                   { "@BookTitle", book.BookTitle },
+                   { "@Author", book.Author },
+                   { "@Publisher", book.Publisher },
+                   { "@YearOfPublication", book.YearOfPublication }
+                };
+
+            // Create a connection to the database
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+
+            int res = connection.ExecuteScalar<int>(query, parameters);
+
+            return res > 0;
+        }
+
+        private Book GetBook(string BookTitle, string Author, string Publisher, int YearOfPublication)
+        {
+            string query = "SELECT * FROM Books WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication";
+
+            var parameters = new Dictionary<string, object>
+    {
+        { "@BookTitle", BookTitle },
+        { "@Author", Author },
+        { "@Publisher", Publisher },
+        { "@YearOfPublication", YearOfPublication }
+    };
+
+            // יצירת חיבור למסד הנתונים
+            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+
+            // שליפת הספר מהמסד
+            var books = connection.ExecuteQuery<Book>(
+                query, parameters, reader => new Book
+                {
+                    BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+                    Author = reader.GetString(reader.GetOrdinal("Author")),
+                    Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+                    YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+                    Genre = reader.GetString(reader.GetOrdinal("Genre")),
+                    DISCOUNTEDPriceForBorrow = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBorrow")),
+                    DISCOUNTEDPriceForBuy = reader.GetDecimal(reader.GetOrdinal("DISCOUNTEDPriceForBuy")),
+                    PriceForBorrow = reader.GetDecimal(reader.GetOrdinal("PriceForBorrow")),
+                    PriceForBuy = reader.GetDecimal(reader.GetOrdinal("PriceForBuy")),
+                    AgeRestriction = reader.GetString(reader.GetOrdinal("AgeRestriction")),
+                    IsOnSale = reader.GetBoolean(reader.GetOrdinal("IsOnSale")),
+                    AmountOfSaleDays = reader.GetInt32(reader.GetOrdinal("AmountOfSaleDays")),
+                    SaleStartDate = reader.GetDateTime(reader.GetOrdinal("SaleStartDate")),
+                    SaleEndDate = reader.GetDateTime(reader.GetOrdinal("SaleEndDate")),
+                    PDF = reader.GetBoolean(reader.GetOrdinal("PDF")),
+                    epub = reader.GetBoolean(reader.GetOrdinal("epub")),
+                    f2b = reader.GetBoolean(reader.GetOrdinal("f2b")),
+                    mobi = reader.GetBoolean(reader.GetOrdinal("mobi")),
+                    Popularity = reader.GetInt32(reader.GetOrdinal("Popularity")),
+                    ImageUrl = reader.GetString(reader.GetOrdinal("ImageUrl")),
+                    AvailableAmountOfCopiesToBorrow = reader.GetInt32(reader.GetOrdinal("AvailableAmountOfCopiesToBorrow")),
+                    BuyOnly = reader.GetBoolean(reader.GetOrdinal("BuyOnly"))
+
+
+                }
+            );
+
+
+            return books.FirstOrDefault();
+        }
+
+
+
+
+
+
 
 
         [HttpGet]
