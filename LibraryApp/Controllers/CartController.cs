@@ -19,7 +19,7 @@ public class CartController : Controller
 
 
     [HttpPost]
-    public IActionResult AddToCart(string bookTitle, string author, string publisher, int yearOfPublication, string actionType)
+    public IActionResult AddToCart(string bookTitle, string author, string publisher, int yearOfPublication, string actionType,string imgUrl)
     {
         // בדיקת פרטי המשתמש המחובר
         string userName = HttpContext.Session.GetString("CurrentUser");
@@ -33,16 +33,44 @@ public class CartController : Controller
         {
             connection.Open();
 
+            // בדיקה אם הספר כבר נמצא בעגלה
+            string duplicateCheckQuery = @"
+        SELECT COUNT(*) 
+        FROM Cart 
+        WHERE UserName = @UserName 
+          AND BookTitle = @BookTitle 
+          AND Author = @Author 
+          AND Publisher = @Publisher 
+          AND YearOfPublication = @YearOfPublication";
+         
+
+            using (SqlCommand duplicateCheckCommand = new SqlCommand(duplicateCheckQuery, connection))
+            {
+                duplicateCheckCommand.Parameters.AddWithValue("@UserName", userName);
+                duplicateCheckCommand.Parameters.AddWithValue("@BookTitle", bookTitle);
+                duplicateCheckCommand.Parameters.AddWithValue("@Author", author);
+                duplicateCheckCommand.Parameters.AddWithValue("@Publisher", publisher);
+                duplicateCheckCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+                
+
+                int duplicateCount = (int)duplicateCheckCommand.ExecuteScalar();
+
+                if (duplicateCount > 0)
+                {
+                    TempData["ErrorMessage"] = "You cannot add the same book more than once to the cart.";
+                    return RedirectToAction("BookDetails", "HomePage", new { bookTitle, author, publisher, yearOfPublication });
+                }
+            }
+
             // בדיקת הפעולה: השאלה או קנייה
             if (actionType == "borrow")
             {
-                // בדיקה אם המשתמש השאיל כבר 3 ספרים ב-30 הימים האחרונים
-                // בדיקה אם המשתמש השאיל או מתכנן להשאיל יותר מ-3 ספרים (Cart + BorrowedBooks)
+                // בדיקה אם המשתמש השאיל כבר 3 ספרים ב-30 הימים האחרונים (Cart + BorrowedBooks)
                 string totalBorrowCountQuery = @"
-                     SELECT 
-                    (SELECT COUNT(*) FROM BorrowedBooks WHERE UserName = @UserName AND BorrowDate >= DATEADD(DAY, -30, GETDATE()))
-                            +
-                    (SELECT COUNT(*) FROM Cart WHERE UserName = @UserName AND ActionType = 'borrow') AS TotalBorrowCount";
+            SELECT 
+                (SELECT COUNT(*) FROM BorrowedBooks WHERE UserName = @UserName AND BorrowDate >= DATEADD(DAY, -30, GETDATE()))
+                +
+                (SELECT COUNT(*) FROM Cart WHERE UserName = @UserName AND ActionType = 'borrow') AS TotalBorrowCount";
 
                 using (SqlCommand totalBorrowCountCommand = new SqlCommand(totalBorrowCountQuery, connection))
                 {
@@ -58,11 +86,16 @@ public class CartController : Controller
 
                 // הוספת הספר לרשימת ההשאלות בעגלה
                 string borrowQuery = @"
-                INSERT INTO Cart (UserName, BookTitle, Author, Publisher, YearOfPublication, ActionType) 
-                VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, 'borrow');
+            INSERT INTO Cart (UserName, BookTitle, Author, Publisher, YearOfPublication, ActionType,ImageUrl) 
+            VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, 'borrow',@ImageUrl);
 
-                UPDATE Books SET AvailableAmountOfCopiesToBorrow = AvailableAmountOfCopiesToBorrow - 1
-                WHERE BookTitle = @BookTitle AND Author = @Author AND Publisher = @Publisher AND YearOfPublication = @YearOfPublication AND AvailableAmountOfCopiesToBorrow > 0";
+            UPDATE Books 
+            SET AvailableAmountOfCopiesToBorrow = AvailableAmountOfCopiesToBorrow - 1
+            WHERE BookTitle = @BookTitle 
+              AND Author = @Author 
+              AND Publisher = @Publisher 
+              AND YearOfPublication = @YearOfPublication 
+              AND AvailableAmountOfCopiesToBorrow > 0";
 
                 using (SqlCommand borrowCommand = new SqlCommand(borrowQuery, connection))
                 {
@@ -71,6 +104,7 @@ public class CartController : Controller
                     borrowCommand.Parameters.AddWithValue("@Author", author);
                     borrowCommand.Parameters.AddWithValue("@Publisher", publisher);
                     borrowCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+                    borrowCommand.Parameters.AddWithValue("@ImageUrl", imgUrl);
 
                     int rowsAffected = borrowCommand.ExecuteNonQuery();
                     if (rowsAffected > 0)
@@ -79,9 +113,8 @@ public class CartController : Controller
 
                         if (IsUserOnWaitingList(bookTitle, author, publisher, yearOfPublication))
                         {
-                            RemoveUserFromWaitingList(userName, bookTitle, author, publisher, yearOfPublication);  ///מחיקת המשתמש מרשימת ההמתנה אם הוא נמצא בה כי הוא כבר הכניס את הספר לעגלה
+                            RemoveUserFromWaitingList(userName, bookTitle, author, publisher, yearOfPublication);  // מחיקת המשתמש מרשימת ההמתנה אם הוא נמצא בה
                         }
-
                     }
                     else
                     {
@@ -95,7 +128,7 @@ public class CartController : Controller
             else if (actionType == "buy")
             {
                 // הוספת הספר לעגלה עבור קנייה
-                string cartQuery = "INSERT INTO Cart (UserName, BookTitle, Author, Publisher, YearOfPublication, ActionType) VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, 'buy')";
+                string cartQuery = "INSERT INTO Cart (UserName, BookTitle, Author, Publisher, YearOfPublication, ActionType,ImageUrl) VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, 'buy', @ImageUrl)";
 
                 using (SqlCommand cartCommand = new SqlCommand(cartQuery, connection))
                 {
@@ -104,14 +137,12 @@ public class CartController : Controller
                     cartCommand.Parameters.AddWithValue("@Author", author);
                     cartCommand.Parameters.AddWithValue("@Publisher", publisher);
                     cartCommand.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+                    cartCommand.Parameters.AddWithValue("@ImageUrl", imgUrl);
 
                     int rowsAffected = cartCommand.ExecuteNonQuery();
                     if (rowsAffected > 0)
                     {
                         TempData["SuccessMessage"] = "Book added to cart successfully.";
-
-                       
-
                     }
                     else
                     {
@@ -132,8 +163,8 @@ public class CartController : Controller
             Publisher = publisher,
             YearOfPublication = yearOfPublication,
             ActionType = actionType,
-            AddedDate = DateTime.Now
-            
+            AddedDate = DateTime.Now,
+            ImageUrl = imgUrl
         };
 
         // הוספת הפריט לרשימת העגלה
@@ -152,6 +183,7 @@ public class CartController : Controller
 
         return RedirectToAction("BookDetails", "HomePage", new { bookTitle, author, publisher, yearOfPublication });
     }
+
 
 
 
@@ -301,7 +333,7 @@ public class CartController : Controller
 
             string query = @"
             SELECT c.BookTitle, c.Author, c.Publisher, c.YearOfPublication, c.ActionType, c.AddedDate, 
-                   b.PriceForBuy, b.PriceForBorrow
+                   b.PriceForBuy, b.PriceForBorrow,c.ImageUrl
             FROM Cart c
             INNER JOIN Books b ON c.BookTitle = b.BookTitle 
                                AND c.Author = b.Author 
@@ -327,6 +359,7 @@ public class CartController : Controller
                             AddedDate = reader.GetDateTime(5),
                             PriceForBuy = reader.GetDecimal(6),
                             PriceForBorrow = reader.GetDecimal(7),
+                            ImageUrl = reader.GetString(8)
                            
                         });
                     }
@@ -409,6 +442,7 @@ public class CartController : Controller
               AND Publisher = @Publisher 
               AND YearOfPublication = @YearOfPublication";
               
+              
 
             using (SqlCommand command = new SqlCommand(query, connection))
             {
@@ -418,6 +452,7 @@ public class CartController : Controller
                 command.Parameters.AddWithValue("@Publisher", publisher);
                 command.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
                 
+
 
                 int rowsAffected = command.ExecuteNonQuery();
                 if (rowsAffected > 0)

@@ -1,30 +1,83 @@
-﻿@{
+﻿<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha384-jLKHWMfL3LzeWmdKBRH4owu2Q0q8U2eSfj62QlbrkM2aMFiUVGmAZ6D3HRd9tw1z" crossorigin="anonymous">
+
+
+@{
     ViewData["Title"] = "Add Feedback";
 }
 
-<h2>Add Feedback for @ViewBag.BookTitle</h2>
+<div class="container py-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center text-primary mb-4">Add Feedback for <strong>@ViewBag.BookTitle</strong></h2>
 
-<form method="post" action="/PersonalLibrary/SubmitFeedback">
-    <input type="hidden" name="bookTitle" value="@ViewBag.BookTitle" />
-    <input type="hidden" name="author" value="@ViewBag.Author" />
-    <input type="hidden" name="publisher" value="@ViewBag.Publisher" />
-    <input type="hidden" name="yearOfPublication" value="@ViewBag.YearOfPublication" />
+        <form method="post" action="/PersonalLibrary/SubmitFeedback">
+            <input type="hidden" name="bookTitle" value="@ViewBag.BookTitle" />
+            <input type="hidden" name="author" value="@ViewBag.Author" />
+            <input type="hidden" name="publisher" value="@ViewBag.Publisher" />
+            <input type="hidden" name="yearOfPublication" value="@ViewBag.YearOfPublication" />
 
-    <div class="mb-3">
-        <label for="rating" class="form-label">Rating (1 to 5)</label>
-        <select name="rating" id="rating" class="form-select" required>
-            <option value="">Select Rating</option>
-            @for (int i = 1; i <= 5; i++)
-            {
-                <option value="@i">@i</option>
+            <!-- Rating Section -->
+            <div class="mb-3">
+                <label for="rating" class="form-label">Rating (1 to 5)</label>
+                <select name="rating" id="rating" class="form-select" required>
+                    <option value="">Select Rating</option>
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <option value="@i">@i</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="mb-4">
+                <label for="feedback" class="form-label">Your Feedback</label>
+                <textarea name="feedback" id="feedback" class="form-control" rows="5" placeholder="Write your feedback here..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg w-100">Submit Feedback</button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const stars = document.querySelectorAll('.star-rating .fa-star');
+        const ratingInput = document.getElementById('rating');
+        const ratingError = document.getElementById('rating-error');
+
+        stars.forEach(star => {
+            star.addEventListener('mouseover', function () {
+                resetStars();
+                highlightStars(this.dataset.value);
+            });
+
+            star.addEventListener('mouseout', resetStars);
+
+            star.addEventListener('click', function () {
+                ratingInput.value = this.dataset.value;
+                stars.forEach(s => s.classList.remove('selected'));
+                this.classList.add('selected');
+                ratingError.classList.add('d-none');
+            });
+        });
+
+        function resetStars() {
+            stars.forEach(star => star.classList.remove('hovered'));
+        }
+
+        function highlightStars(value) {
+            stars.forEach(star => {
+                if (star.dataset.value <= value) {
+                    star.classList.add('hovered');
+                }
+            });
+        }
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            if (!ratingInput.value) {
+                e.preventDefault();
+                ratingError.classList.remove('d-none');
             }
-        </select>
-    </div>
-
-    <div class="mb-3">
-        <label for="feedback" class="form-label">Feedback</label>
-        <textarea name="feedback" id="feedback" class="form-control" rows="4" placeholder="Write your feedback here..."></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Submit Feedback</button>
-</form>
+        });
+    });
+</script>

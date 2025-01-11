@@ -126,7 +126,7 @@ public class PaymentController : Controller
             var approvalUrl = createdPayment.links.FirstOrDefault(link => link.rel.Equals("approval_url", StringComparison.OrdinalIgnoreCase))?.href;
 
 
-            SuccessfulPaymentEmail(userName);
+            
 
 
             return Redirect(approvalUrl);
@@ -222,8 +222,8 @@ public class PaymentController : Controller
     private void AddToPurchasedBooks(SqlConnection connection, string userName, cartItem item)
     {
         string query = @"
-    INSERT INTO PurchasedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, PurchaseDate) 
-    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE())";
+    INSERT INTO PurchasedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, PurchaseDate,ImageUrl) 
+    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE(),@ImageUrl)";
 
         using (SqlCommand command = new SqlCommand(query, connection))
         {
@@ -232,17 +232,18 @@ public class PaymentController : Controller
             command.Parameters.AddWithValue("@Author", item.Author);
             command.Parameters.AddWithValue("@Publisher", item.Publisher);
             command.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+            command.Parameters.AddWithValue("@ImageUrl", item.ImageUrl);
 
             int rowsAffected = command.ExecuteNonQuery();
-            Console.WriteLine($"Added to PurchasedBooks: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, Rows affected: {rowsAffected}");
+            
         }
     }
 
     private void AddToBorrowedBooks(SqlConnection connection, string userName, cartItem item)
     {
         string query = @"
-    INSERT INTO BorrowedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, BorrowDate, ReturnDate) 
-    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE(), DATEADD(DAY, 30, GETDATE()))";
+    INSERT INTO BorrowedBooks (UserName, BookTitle, Author, Publisher, YearOfPublication, BorrowDate, ReturnDate,ImageUrl) 
+    VALUES (@UserName, @BookTitle, @Author, @Publisher, @YearOfPublication, GETDATE(), DATEADD(DAY, 30, GETDATE()),@ImageUrl)";
 
         using (SqlCommand command = new SqlCommand(query, connection))
         {
@@ -251,9 +252,10 @@ public class PaymentController : Controller
             command.Parameters.AddWithValue("@Author", item.Author);
             command.Parameters.AddWithValue("@Publisher", item.Publisher);
             command.Parameters.AddWithValue("@YearOfPublication", item.YearOfPublication);
+            command.Parameters.AddWithValue("@ImageUrl", item.ImageUrl);
 
             int rowsAffected = command.ExecuteNonQuery();
-            Console.WriteLine($"Added to BorrowedBooks: {item.BookTitle}, Author: {item.Author}, Publisher: {item.Publisher}, Year: {item.YearOfPublication}, Rows affected: {rowsAffected}");
+            
         }
 
 
@@ -275,7 +277,7 @@ public class PaymentController : Controller
                 return RedirectToAction("ViewCart", "Cart");
             }
 
-            List<(string BookTitle, string Author, string Publisher, int YearOfPublication, string ActionType)> cartItems = new List<(string, string, string, int, string)>();
+            List<(string BookTitle, string Author, string Publisher, int YearOfPublication, string ActionType,string ImageUrl)> cartItems = new List<(string, string, string, int, string,string)>();
             decimal totalAmount = 0;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -283,7 +285,7 @@ public class PaymentController : Controller
                 connection.Open();
                 string query = @"
                 SELECT b.BookTitle, b.Author, b.Publisher, b.YearOfPublication, 
-                       b.PriceForBuy, b.PriceForBorrow, c.ActionType
+                       b.PriceForBuy, b.PriceForBorrow, c.ActionType,b.ImageUrl
                 FROM Cart c
                 INNER JOIN Books b ON c.BookTitle = b.BookTitle AND c.Author = b.Author
                 WHERE c.UserName = @UserName";
@@ -304,7 +306,9 @@ public class PaymentController : Controller
                                 reader.GetString(1),  // Author
                                 reader.GetString(2),  // Publisher
                                 reader.GetInt32(3),   // YearOfPublication
-                                actionType           // ActionType
+                                actionType,
+                                reader.GetString(7)
+
                             ));
 
                             totalAmount += price;
@@ -347,7 +351,8 @@ public class PaymentController : Controller
                             Author = item.Author,
                             Publisher = item.Publisher,
                             YearOfPublication = item.YearOfPublication,
-                            ActionType = item.ActionType
+                            ActionType = item.ActionType,
+                            ImageUrl=item.ImageUrl
                         };
 
                         if (cartItemObj.ActionType == "buy")
@@ -358,6 +363,9 @@ public class PaymentController : Controller
                         {
                             AddToBorrowedBooks(connection, userName, cartItemObj);
                         }
+
+
+
                     }
 
 

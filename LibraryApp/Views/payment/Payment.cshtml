@@ -3,32 +3,46 @@
 }
 
 <div class="container py-5">
-    <h1 class="text-primary text-center">Credit Card Payment</h1>
-    <p class="text-center">Please enter your credit card details below to complete the payment.</p>
+    <div class="card shadow-lg p-4">
+        <h1 class="text-primary text-center mb-4">Credit Card Payment</h1>
+        <p class="text-center">Please enter your credit card details below to complete the payment.</p>
 
-    <!-- טופס תשלום עם Stripe -->
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div id="card-element" class="form-control p-3">
-                <!-- Stripe Elements יתווסף כאן -->
+        <!-- טופס תשלום עם Stripe -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div id="card-element" class="form-control p-3 border-primary">
+                    <!-- Stripe Elements יתווסף כאן -->
+                </div>
+                <div id="card-errors" role="alert" class="text-danger mt-2"></div>
+
+                <button id="submit-payment" class="btn btn-success btn-lg mt-4 w-100">
+                    <i class="bi bi-credit-card"></i> Submit Payment
+                </button>
             </div>
-            <div id="card-errors" role="alert" class="text-danger mt-2"></div>
-
-            <button id="submit-payment" class="btn btn-success btn-block mt-4 w-100">Submit Payment</button>
         </div>
-    </div>
 
-    <!-- הודעות הצלחה או שגיאה -->
-    <div id="payment-message" class="mt-4 text-center d-none">
-        <div id="payment-message-content" class="alert"></div>
-    </div>
-
-    <!-- ספינר בזמן התשלום -->
-    <div id="loading-spinner" class="text-center mt-4 d-none">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Processing...</span>
+        <!-- הודעות הצלחה או שגיאה -->
+        <div id="payment-message" class="mt-4 text-center d-none">
+            <div id="payment-message-content" class="alert"></div>
         </div>
-        <p>Processing your payment, please wait...</p>
+
+        <!-- ספינר בזמן התשלום -->
+        <div id="loading-spinner" class="text-center mt-4 d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Processing...</span>
+            </div>
+            <p class="mt-2">Processing your payment, please wait...</p>
+        </div>
+
+        <!-- Alerts -->
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
+        }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success mt-3">@TempData["SuccessMessage"]</div>
+        }
     </div>
 </div>
 
@@ -36,63 +50,44 @@
 <script>
     var stripe = Stripe('pk_test_51QecxbDKzSonVfg09TfeIEFQZTu4YmpUjqGYkoDewf6x7vhOfXSknH3VCNWwCT2tXi8xnFeaVxoBgu3ODhGkwNbA00cGzCym6w'); // החלף במפתח הציבורי שלך
     var elements = stripe.elements();
-    var card = elements.create('card');
+    var card = elements.create('card', { style: { base: { fontSize: '18px' } } });
     card.mount('#card-element');
 
-    // טיפול באירועי שגיאה
     card.on('change', function(event) {
         var displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
+        displayError.textContent = event.error ? event.error.message : '';
     });
 
-    // שליחת הטוקן לשרת
     document.getElementById('submit-payment').addEventListener('click', function(ev) {
         ev.preventDefault();
 
-        // הצגת הספינר והסתרת כפתור התשלום
         document.getElementById('submit-payment').classList.add('d-none');
         document.getElementById('loading-spinner').classList.remove('d-none');
 
         stripe.createToken(card).then(function(result) {
             if (result.error) {
-                // הצגת שגיאה למשתמש
                 showMessage('danger', result.error.message);
             } else {
-                // שליחת הטוקן לשרת
                 fetch('/Payment/ProcessCreditCardPayment', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: result.token.id })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         showMessage('success', data.message);
-                        setTimeout(() => { 
-                            window.location.href = '/HomePage/ShowBooks';
-                    }, 4000); // השהייה של 4 שניות לפני ההפניה לעמוד הספרים
-                        
+                        setTimeout(() => window.location.href = '/HomePage/ShowBooks', 4000);
                     } else {
                         showMessage('danger', data.message);
-                    setTimeout(() => {
-                        window.location.href = '/Cart/ViewCart';
-                    }, 4000); // השהייה של 4 שניות לפני ההפניה לעמוד העגלה
+                        setTimeout(() => window.location.href = '/Cart/ViewCart', 4000);
                     }
                 })
-                .catch(error => {
-                    showMessage('danger', 'Error processing payment: ' + error);
-                });
+                .catch(error => showMessage('danger', 'Error processing payment: ' + error));
             }
         });
     });
 
-    // פונקציה להצגת הודעה למשתמש
     function showMessage(type, message) {
         var messageElement = document.getElementById('payment-message');
         var messageContent = document.getElementById('payment-message-content');
@@ -101,7 +96,6 @@
         messageContent.className = 'alert alert-' + type;
         messageContent.textContent = message;
 
-        // הסתרת הספינר והצגת כפתור התשלום מחדש
         document.getElementById('submit-payment').classList.remove('d-none');
         document.getElementById('loading-spinner').classList.add('d-none');
     }

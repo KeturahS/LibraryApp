@@ -1,10 +1,10 @@
 ﻿
-<link href="~/css/mystyle.css" rel="stylesheet" />
+<link href="~/css/MyStyle.css" rel="stylesheet" />
 
-<body> 
+<body>
 
 
-<div class="container py-5">
+    <div class="container my-5">
     <!-- Header Section -->
     <div class="text-center mb-5">
 
@@ -22,13 +22,13 @@
             <!-- Search Section -->
               <div class="mb-4">
                 <form method="get" action="/HomePage/SearchBooks">
-                    <div class="input-group">
+                    <div class="input-group shadow-sm">
                         <input type="text"
                                name="searchQuery"
-                               class="form-control"
+                                   class="form-control search-input"
                                placeholder="Search by book title, author, or publisher..."
                                value="@ViewBag.SearchQuery">
-                                <button class="search-button" type="submit">Search</button>
+                            <button class="search-button btn btn-primary" type="submit">Search</button>
                     </div>
                 </form>
               </div>
@@ -37,7 +37,7 @@
                 <!-- order Button -->
             <div class="mb-4">
                 <form method="get" action="/HomePage/SortBooks">
-                    <div class="input-group">
+                    <div class="input-group shadow-sm">
                         <select name="sortOption" class="form-select">
                             <option value="">Sort by...</option>
                             <option value="priceLowToHigh">Price: Low to High</option>
@@ -46,7 +46,7 @@
                             <option value="genre">Genre</option>
                             <option value="year">Year of Publication</option>
                         </select>
-                                <button class="sort-button" type="submit">Sort</button>
+                        <button class="sort-button btn btn-secondary" type="submit">Sort</button>
                
                         @if (!string.IsNullOrEmpty(ViewBag.SortOption))
                         {
@@ -60,7 +60,7 @@
 
             <!-- Filter Button -->
             <div class="mb-4">
-                        <button class="filter-button" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection" aria-expanded="false">
+                <button class="filter-button btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection" aria-expanded="false">
                          Show Filters
                         </button>
 
@@ -162,7 +162,7 @@
    
 
             <!-- Book Catalog Section -->
-            <div>
+            <div class="fade-in">
                 <h2>Book Catalog</h2>
                 @if (Model == null)
                 {
@@ -174,7 +174,7 @@
                         @foreach (var book in Model)
                         {
                                     <div class="col">
-                                        <div class="card h-100">
+                                <div class="card h-100 shadow-sm">
 
 
                                     @{
@@ -205,10 +205,7 @@
                                         <h5 class="card-title">@book.BookTitle</h5>
                                         <p class="card-text">
                                             <strong>Author:</strong> @book.Author<br>
-                                            <strong>Publisher:</strong> @book.Publisher<br>
-                                            <strong>Year of Publication:</strong> @book.YearOfPublication<br>
-                                            <strong>Genre:</strong> @book.Genre<br>
-                                            <strong>Age Restriction:</strong> @book.AgeRestriction<br>
+                                            
 
 
                                             @if(book.BuyOnly==false)
@@ -248,28 +245,11 @@
                                                 
                                             }
 
-                                             <strong>Formats:</strong>
-                                
-                                            @if (book.PDF)
-                                            {
-                                                <span>PDF </span>
-                                            }
-                                            @if (book.epub)
-                                            {
-                                                <span>EPUB </span>
-                                            }
-                                            @if (book.f2b)
-                                            {
-                                                <span>F2B </span>
-                                            }
-                                            @if (book.mobi)
-                                            {
-                                                <span>MOBI </span>
-                                            }
+                                            
                                         </p>
 
 
-                                        <form method="post" action="/Admin/ShowBookDetails">
+                                        <form method="post" action="/HomePage/BookDetails">
                                             <input type="hidden" name="bookTitle" value="@book.BookTitle" />
                                             <input type="hidden" name="author" value="@book.Author" />
                                             <input type="hidden" name="publisher" value="@book.Publisher" />
@@ -294,3 +274,16 @@
 </div>
 
 </body>
+
+
+
+<script>
+    document.addEventListener('scroll', function () {
+        const elements = document.querySelectorAll('.fade-in');
+        elements.forEach(el => {
+            if (el.getBoundingClientRect().top < window.innerHeight) {
+                el.classList.add('visible');
+            }
+        });
+    });
+</script>

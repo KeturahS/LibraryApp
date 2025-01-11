@@ -1097,49 +1097,52 @@ namespace LibraryApp.Controllers
         }
 
 
-        public void SendBorrowingReminders()
-        {
-            // SQL query to find borrowed books that are due in 5 days
-            string query = @"
-                SELECT UserName, BookTitle, ReturnDate, Email
-                FROM BorrowedBooks
-                WHERE DATEDIFF(DAY, GETDATE(), ReturnDate) = 5";
+        //public void SendBorrowingReminders()
+        //{
+        //    // SQL query to find borrowed books that are due in 5 days
+        //    string query = @"
+        //        SELECT UserName, BookTitle, ReturnDate, Email
+        //        FROM BorrowedBooks
+        //        WHERE DATEDIFF(DAY, GETDATE(), ReturnDate) = 5";
 
-            ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
+        //    ConnectionToDBModel connection = new ConnectionToDBModel(_configuration);
 
-            // Execute the query and get the results
-            var usersToRemind = connection.ExecuteQuery<BorrowedBook>(query, null, reader => new BorrowedBook
-            {
-                UserName = reader.GetString(reader.GetOrdinal("UserName")),
-                BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
-                Author = reader.GetString(reader.GetOrdinal("Author")),
-                Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
-                YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
-                ReturnDate = reader.GetDateTime(reader.GetOrdinal("ReturnDate")),
-                BorrowID = reader.GetInt32(reader.GetOrdinal("BorrowID")),
-            });
+        //    // Execute the query and get the results
+        //    var usersToRemind = connection.ExecuteQuery<BorrowedBook>(query, null, reader => new BorrowedBook
+        //    {
+        //        UserName = reader.GetString(reader.GetOrdinal("UserName")),
+        //        BookTitle = reader.GetString(reader.GetOrdinal("BookTitle")),
+        //        Author = reader.GetString(reader.GetOrdinal("Author")),
+        //        Publisher = reader.GetString(reader.GetOrdinal("Publisher")),
+        //        YearOfPublication = reader.GetInt32(reader.GetOrdinal("YearOfPublication")),
+        //        ReturnDate = reader.GetDateTime(reader.GetOrdinal("ReturnDate")),
+        //        BorrowID = reader.GetInt32(reader.GetOrdinal("BorrowID")),
+        //    });
 
-            // Send email reminder for each borrowed book
-            foreach (var item in usersToRemind)
-            {
-                // Send reminder only for borrowed books with remaining days == 5
-                if (item.RemainingDays == 5)
-                {
+        //    // Send email reminder for each borrowed book
+        //    foreach (var item in usersToRemind)
+        //    {
+        //        // Send reminder only for borrowed books with remaining days == 5
+        //        if (item.RemainingDays == 5)
+        //        {
 
-                    Gmail gmail = new Gmail();
+        //            Gmail gmail = new Gmail();
 
-                    gmail.To = item.UserName;
-                    gmail.Subject = "Reminder: Your book borrowing period is ending soon!";
-                    gmail.Body = $"Dear {item.UserName},\n\nThis is a reminder that the book '{item.BookTitle}' you borrowed is due to be returned in 5 days. Please make sure to return it on time.\n\nThank you.";
+        //            gmail.To = item.UserName;
+        //            gmail.Subject = "Reminder: Your book borrowing period is ending soon!";
+        //            gmail.Body = $"Dear {item.UserName},\n\nThis is a reminder that the book '{item.BookTitle}' you borrowed is due to be returned in 5 days. Please make sure to return it on time.\n\nThank you.";
 
-                    gmail.SendEmail();
+        //            gmail.SendEmail();
 
-                }
-            }
+        //        }
+        //    }
 
          
-        }
+        //}
     }
+
+
+
 
 }
 

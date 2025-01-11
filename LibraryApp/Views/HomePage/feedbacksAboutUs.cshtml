@@ -1,4 +1,7 @@
-﻿<div class="container my-5">
+﻿<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+
+<div class="container my-5">
     <h2 class="text-primary">What users think about our service</h2>
 
     <!-- כפתור להצגת/הסתרת הפידבקים -->
@@ -18,8 +21,22 @@
                 @foreach (var feedback in (List<(string UserName, int Rating, string Feedback, DateTime FeedbackDate)>)ViewBag.ServiceFeedbacks)
                 {
                     <li class="list-group-item">
-                        <strong>@feedback.UserName</strong> rated <strong>@feedback.Rating/5</strong>
-                        <br />
+                        <strong>@feedback.UserName</strong> rated:
+                        <!-- כוכבים לדירוג -->
+                        <div class="star-rating">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= feedback.Rating)
+                                {
+                                    <span class="fa fa-star checked"></span>
+                                }
+                                else
+                                {
+                                    <span class="fa fa-star"></span>
+                                }
+                            }
+                        </div>
+                        
                         <em>@feedback.FeedbackDate.ToShortDateString()</em>
                         <br />
                         @if (!string.IsNullOrEmpty(feedback.Feedback))

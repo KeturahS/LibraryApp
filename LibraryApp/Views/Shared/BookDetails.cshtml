@@ -1,5 +1,7 @@
 ﻿@model Book
 
+<link href="~/css/MyStyle.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
 <div class="container py-5">
     <h1 class="text-primary">@Model.BookTitle</h1>
@@ -66,6 +68,7 @@
 
         @if (Model.BuyOnly == false)
             {
+            
 
             @if (Model.AvailableAmountOfCopiesToBorrow > 0  && TempData["Is it current user's turn to borrow"] == "yes" )
                 {
@@ -78,6 +81,7 @@
                                 <input type="hidden" name="author" value="@Model.Author" />
                                 <input type="hidden" name="publisher" value="@Model.Publisher" />
                                 <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+                                <input type="hidden" name="imgUrl" value="@Model.ImageUrl" />
 
                                 <!-- כפתור השאלה -->
                                 <input type="hidden" name="actionType" value="borrow" />
@@ -93,6 +97,7 @@
                             <input type="hidden" name="author" value="@Model.Author" />
                             <input type="hidden" name="publisher" value="@Model.Publisher" />
                             <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+                            <input type="hidden" name="imgUrl" value="@Model.ImageUrl" />
 
                             <!-- כפתור השאלה -->
                             <input type="hidden" name="actionType" value="borrow" />
@@ -180,6 +185,7 @@
         <input type="hidden" name="author" value="@Model.Author" />
         <input type="hidden" name="publisher" value="@Model.Publisher" />
         <input type="hidden" name="yearOfPublication" value="@Model.YearOfPublication" />
+        <input type="hidden" name="imgUrl" value="@Model.ImageUrl" />
 
         <!-- כפתור קנייה -->
         <input type="hidden" name="actionType" value="buy" />
@@ -191,14 +197,28 @@
     <!-- Feedback & Reviews Section -->
     <div class="mt-5">
         <h2>Feedback & Reviews</h2>
-
+        
         @if (ViewBag.Feedbacks != null && ((List<LibraryApp.Models.Feedback>)ViewBag.Feedbacks).Any())
         {
             <ul class="list-group">
                 @foreach (var feedback in (List<LibraryApp.Models.Feedback>)ViewBag.Feedbacks)
                 {
                     <li class="list-group-item">
-                        <strong>@feedback.UserName</strong> - @feedback.Rating/5<br />
+                        <strong>@feedback.UserName</strong> -  
+                        <!-- כוכבים לדירוג -->
+                        <div class="star-rating">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= feedback.Rating)
+                                {
+                                    <span class="fa fa-star checked"></span>
+                                }
+                                else
+                                {
+                                    <span class="fa fa-star"></span>
+                                }
+                            }
+                        </div>
                         <small>@feedback.FeedbackDate.ToShortDateString()</small>
                         <p>@feedback.Comment</p>
                     </li>
@@ -223,4 +243,23 @@
     {
         <div class="alert alert-success mt-3">@TempData["SuccessMessage"]</div>
     }
+
+
+    <script>
+            document.querySelectorAll('button, .btn').forEach(button => {
+            button.addEventListener('click', function () {
+                button.classList.add('clicked');
+                setTimeout(() => {
+                    button.classList.remove('clicked');
+                }, 300);
+            });
+        });
+
+    </script>
+
+
 </div>
+
+
+
+

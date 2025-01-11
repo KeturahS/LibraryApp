@@ -23,6 +23,19 @@
             <textarea name="feedback" id="feedback" class="form-control" rows="4"></textarea>
         </div>
 
+        <!-- Alerts -->
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
+        }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success mt-3">@TempData["SuccessMessage"]</div>
+        }
+
         <button type="submit" class="btn btn-primary">Submit Feedback</button>
     </form>
+
+
+   
 </div>

@@ -1,122 +1,95 @@
 ﻿@model List<cartItem>
 
+<link href="~/css/MyStyle.css" rel="stylesheet" />
+
 <div class="container py-5">
-    <h1 class="text-primary">Your Cart</h1>
+    <h1 class="text-primary text-center mb-4">Your Cart</h1>
 
     @if (Model == null || !Model.Any())
     {
-        <p class="text-danger">Your cart is empty.</p>
+        <p class="text-danger text-center">Your cart is empty.</p>
     }
     else
     {
-        <table class="table table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Book Title</th>
-                    <th>Author</th>
-                    <th>Publisher</th>
-                    <th>Year of Publication</th>
-                    <th>Action Type</th>
-                    <th>Added Date</th>
-                    <th>Price</th>
-                    <th>Buy/Borrow</th>
-                    <th>Remove</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    <tr>
-                        <td>@item.BookTitle</td>
-                        <td>@item.Author</td>
-                        <td>@item.Publisher</td>
-                        <td>@item.YearOfPublication</td>
-                      
-                        
-                       <td>@(item.ActionType == "buy" ? "Buy" : "Borrow")</td>
-                      
-                        
-                        <td>@item.AddedDate.ToShortDateString()</td>
-                        <td>
-                            @if (item.ActionType == "buy")
-                            {
-                                @item.PriceForBuy
-                            }
-                            else
-                            {
-                                @item.PriceForBorrow
-                            }
-                        </td>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img src="@item.ImageUrl" alt="@item.BookTitle" class="card-img-top img-fluid" />
 
+                        <div class="card-body">
+                            <h5 class="card-title">@item.BookTitle</h5>
+                            <p class="card-text"><strong>Author:</strong> @item.Author</p>
+                            <p class="card-text"><strong>Publisher:</strong> @item.Publisher</p>
+                            <p class="card-text"><strong>Year:</strong> @item.YearOfPublication</p>
+                            <p class="card-text">
+                                <strong>Price:</strong>
+                                @if (item.ActionType == "buy")
+                                {
+                                    @item.PriceForBuy
+                                    }
+                                else
+                                {
+                                    @item.PriceForBorrow
+                                    }
+                            </p>
 
-                     
-
-                       
-
-                         <!-- טופס להחלפת סוג הפעולה -->
-                        <td>
-                             @if (item.BuyOnly == false)
-                                   { <form method="post" action="/Cart/ChangeActionType">
-                                        <input type="hidden" name="bookTitle" value="@item.BookTitle" />
-                                        <input type="hidden" name="author" value="@item.Author" />
-                                        <input type="hidden" name="publisher" value="@item.Publisher" />
-                                        <input type="hidden" name="yearOfPublication" value="@item.YearOfPublication" />
-
-                                                    <select name="newActionType" class="form-select">
-                                                        @if (item.ActionType == "buy")
-                                                        {
-                                                            <option value="buy" selected>Buy</option>
-                                                            <option value="borrow">Borrow</option>
-                                                        }
-                                                        else if (item.ActionType == "borrow")
-                                                        {
-                                                            <option value="buy">Buy</option>
-                                                            <option value="borrow" selected>Borrow</option>
-                                                        }
-                                                    </select>
-
-
-                                        <button type="submit" class="btn btn-primary mt-2">Change</button>
-                                    </form>
-                                   }
-                           
-                             else
-                                    {
-                                   <strong>BUY ONLY</strong>
-                                }
-                         </td>
-
-                        
-                        
-                        <td>
-                            <form method="post" action="/Cart/RemoveFromCart" onsubmit="return confirmRemove()">
+                            <!-- טופס להחלפת סוג הפעולה -->
+                            <form method="post" action="/Cart/ChangeActionType" class="mb-2">
                                 <input type="hidden" name="bookTitle" value="@item.BookTitle" />
                                 <input type="hidden" name="author" value="@item.Author" />
                                 <input type="hidden" name="publisher" value="@item.Publisher" />
                                 <input type="hidden" name="yearOfPublication" value="@item.YearOfPublication" />
 
-                                <button type="submit" class="btn btn-danger">Remove</button>
-
+                                <div class="input-group">
+                                    <select name="newActionType" class="form-select">
+                                        @if (item.ActionType == "buy")
+                                        {
+                                            <option value="buy" selected>Buy</option>
+                                            <option value="borrow">Borrow</option>
+                                        }
+                                        else if (item.ActionType == "borrow")
+                                        {
+                                            <option value="buy">Buy</option>
+                                            <option value="borrow" selected>Borrow</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Change</button>
+                                </div>
                             </form>
-                        </td>
 
+                            <!-- כפתור להסרת ספר -->
+                            <form method="post" action="/Cart/RemoveFromCart" onsubmit="return confirmRemove()">
+                                <input type="hidden" name="bookTitle" value="@item.BookTitle" />
+                                <input type="hidden" name="author" value="@item.Author" />
+                                <input type="hidden" name="publisher" value="@item.Publisher" />
+                                <input type="hidden" name="yearOfPublication" value="@item.YearOfPublication" />
+                                <button type="submit" class="btn btn-danger w-100">Remove</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
 
+        <!-- סך הכול -->
+        <div class="mt-4 text-end">
+            <h4><strong>Total:</strong> $@Model.Sum(item => item.ActionType == "buy" ? item.PriceForBuy : item.PriceForBorrow)</h4>
+        </div>
 
-                        
-                    </tr>
-                }
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="5" class="text-end"><strong>Total:</strong></td>
-                    <td colspan="3">
-                        <strong>
-                            $@Model.Sum(item => item.ActionType == "buy" ? item.PriceForBuy : item.PriceForBorrow)
-                        </strong>
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
+        <!-- כפתורי תשלום -->
+        <div class="d-flex justify-content-center mt-4 gap-3">
+            <form method="post" action="/Payment/PayWithPayPal">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-paypal"></i> Pay with PayPal
+                </button>
+            </form>
+
+            <a href="/Payment/CreditCardPaymentPage" class="btn btn-primary btn-lg">
+                <i class="bi bi-credit-card"></i> Pay with Credit Card
+            </a>
+        </div>
     }
 
     <script>
@@ -125,32 +98,18 @@
         }
     </script>
 
-    <div class="mt-3">
-        <a href="/HomePage/ShowBooks" class="btn btn-primary">Continue Shopping</a>
+    <!-- חזרה להמשך קניות -->
+    <div class="mt-4 text-center">
+        <a href="/HomePage/ShowBooks" class="btn btn-secondary btn-lg">Continue Shopping</a>
     </div>
 
-
-    <!-- Payment Button -->
-    <div class="mt-4">
-        <form method="post" action="/Payment/PayWithPayPal">
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="bi bi-paypal"></i> Pay with PayPal
-            </button>
-        </form>
-
-    </div>
-
-
-    <a href="/Payment/CreditCardPaymentPage" class="btn btn-success btn-lg">
-        <i class="bi bi-credit-card"></i> Pay with Credit Card
-    </a>
-
-
-
+    <!-- Alerts -->
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
     }
-
-
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success mt-3">@TempData["SuccessMessage"]</div>
+    }
 </div>

@@ -38,7 +38,7 @@ public class PersonalLibraryController : Controller
 
             // שליפת הספרים שנרכשו
             string purchasedQuery = @"
-                SELECT BookTitle, Author, Publisher, YearOfPublication, 'Purchased' AS ActionType, PurchaseDate AS Date
+                SELECT BookTitle, Author, Publisher, YearOfPublication, 'Purchased' AS ActionType, PurchaseDate AS Date,ImageUrl
                 FROM PurchasedBooks
                 WHERE UserName = @UserName";
 
@@ -57,6 +57,7 @@ public class PersonalLibraryController : Controller
                             YearOfPublication = reader.GetInt32(3),
                             ActionType = reader.GetString(4),
                             Date = reader.GetDateTime(5),
+                            ImageUrl = reader.GetString(6),
                             RemainingDays = null // ספרים שנרכשו לא דורשים החזרה
                         });
                     }
@@ -66,7 +67,7 @@ public class PersonalLibraryController : Controller
             // שליפת הספרים שהושאלו
             string borrowedQuery = @"
                 SELECT BookTitle, Author, Publisher, YearOfPublication, 'Borrowed' AS ActionType, BorrowDate AS Date, 
-                       DATEDIFF(DAY, GETDATE(), ReturnDate) AS RemainingDays
+                       DATEDIFF(DAY, GETDATE(), ReturnDate) AS RemainingDays,ImageUrl
                 FROM BorrowedBooks
                 WHERE UserName = @UserName";
 
@@ -88,7 +89,9 @@ public class PersonalLibraryController : Controller
                                 YearOfPublication = reader.GetInt32(3),
                                 ActionType = reader.GetString(4),
                                 Date = reader.GetDateTime(5),
-                                RemainingDays = remainingDays
+                                
+                                RemainingDays = remainingDays,
+                                ImageUrl = reader.GetString(7)
                             });
                         }
                     }
@@ -100,7 +103,7 @@ public class PersonalLibraryController : Controller
     }
 
     [HttpPost]
-    public IActionResult RemoveBook(string bookTitle, string actionType)
+    public IActionResult RemoveBook(string bookTitle, string author, string publisher, int yearOfPublication, string actionType)
     {
         string userName = HttpContext.Session.GetString("CurrentUser");
         if (string.IsNullOrEmpty(userName))
@@ -116,11 +119,11 @@ public class PersonalLibraryController : Controller
 
             if (actionType == "Purchased")
             {
-                deleteQuery = "DELETE FROM PurchasedBooks WHERE UserName = @UserName AND BookTitle = @BookTitle";
+                deleteQuery = "DELETE FROM PurchasedBooks WHERE UserName = @UserName AND BookTitle = @BookTitle AND Author=@Author AND Publisher=@Publisher AND YearOfPublication=@YearOfPublication ";
             }
             else if (actionType == "Borrowed")
             {
-                deleteQuery = "DELETE FROM BorrowedBooks WHERE UserName = @UserName AND BookTitle = @BookTitle";
+                deleteQuery = "DELETE FROM BorrowedBooks WHERE UserName = @UserName AND BookTitle = @BookTitle AND Author=@Author AND Publisher=@Publisher AND YearOfPublication=@YearOfPublication";
             }
             else
             {
@@ -132,6 +135,10 @@ public class PersonalLibraryController : Controller
             {
                 command.Parameters.AddWithValue("@UserName", userName);
                 command.Parameters.AddWithValue("@BookTitle", bookTitle);
+                command.Parameters.AddWithValue("@Author", author);
+                command.Parameters.AddWithValue("@Publisher", publisher);
+                command.Parameters.AddWithValue("@YearOfPublication", yearOfPublication);
+
                 int rowsAffected = command.ExecuteNonQuery();
 
                 if (rowsAffected > 0)
@@ -140,9 +147,7 @@ public class PersonalLibraryController : Controller
 
                     if (actionType == "Borrowed")
                     {
-                       // UpdateAboutNewAvailableBook(bookTitle, Author, Publisher, YearOfPublication);   /// כאן בעצם שולחים לשלושה אנשים ראשונים שברשימת ההמתנה לספר הזה שהספר זמין אבל אפשר לעשות את זה רק אם ארבעת השדות של המפתח של הספר מתקבלים כפרמטרים בפונקציה הזאת
-                                                                                                            ////ברגע שאתה מסדר את הטבלה אז אפשר פשוט להוציא את זה מההערות
-
+                        UpdateAboutNewAvailableBook(bookTitle, author, publisher, yearOfPublication);  
 					}
                 }
 

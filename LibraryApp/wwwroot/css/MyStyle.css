@@ -1,5 +1,4 @@
-﻿
-/* Ribbon Styles */
+﻿/* Ribbon Styles */
 .ribbon {
     position: absolute;
     top: 10px;
@@ -30,8 +29,6 @@
             text-shadow: 1px 1px 2px #000;
         }
 
-
-
 :root {
     --primary-blue: #4DA8DA;
     --light-blue: #E6F3FF;
@@ -40,9 +37,14 @@
 }
 
 body {
+    font-family: 'Poppins', sans-serif;
     background-color: var(--light-blue);
+    color: #333;
 }
 
+h1, h2, h3 {
+    font-weight: 600;
+}
 
 .search-container {
     margin: 2rem auto;
@@ -71,83 +73,221 @@ body {
     border-radius: 0 20px 20px 0;
     color: white;
     padding: 0.75rem 1.5rem;
+    transition: background-color 0.3s, transform 0.2s;
 }
 
     .search-button:hover {
         background-color: var(--dark-blue);
         border-color: var(--dark-blue);
+        transform: scale(1.05);
     }
 
-.filter-button {
+.filter-button, .sort-button {
     background-color: var(--medium-blue);
     border: none;
     color: #00008B;
     border-radius: 20px;
     padding: 0.5rem 1.5rem;
+    transition: background-color 0.3s, transform 0.2s;
 }
 
-    .filter-button:hover {
+    .filter-button:hover, .sort-button:hover {
         background-color: var(--primary-blue);
         color: white;
+        transform: scale(1.05);
     }
-
-.sort-button {
-    background-color: var(--medium-blue);
-    border: none;
-    color: #00008B;
-    border-radius: 20px;
-    padding: 0.5rem 1.5rem;
-}
-
-    .sort-button:hover {
-        background-color: var(--primary-blue);
-        color: white;
-    }
-
-
-body {
-    background-color: #E6F3FF;
-}
 
 .navbar {
     background-color: #4DA8DA !important;
+
 }
 
 .card {
-    background-color: #F0F8FF;
-    border: 1px solid #87CEFA;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.card-header {
-    background-color: #B0E0E6;
-    color: #00008B;
-}
-
-.btn-primary {
-    background-color: #4DA8DA;
-    border-color: #4DA8DA;
-}
-
-    .btn-primary:hover {
-        background-color: #1E90FF;
-        border-color: #1E90FF;
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     }
 
-.btn-outline-primary {
+.btn {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+    .btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+.btn-success {
+    background-color: #4CAF50;
+    border: none;
+}
+
+    .btn-success:hover {
+        background-color: #45A049;
+    }
+
+.btn-warning {
+    background-color: #FFA500;
+    border: none;
+    color: #fff;
+}
+
+    .btn-warning:hover {
+        background-color: #FF8C00;
+    }
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+    .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+.img-fluid {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+p {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+/* עיצוב כוכבים */
+.star-rating .fa-star {
+    font-size: 1.5rem;
+    color: #ccc;
+    margin-right: 5px;
+    transition: color 0.3s;
+}
+
+    .star-rating .fa-star.checked {
+        color: #FFD700;
+    }
+
+    .star-rating .fa-star:hover {
+        color: #FFA500;
+    }
+
+button, .btn {
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+    button::before, .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease;
+        z-index: -1;
+    }
+
+    button:hover::before, .btn:hover::before {
+        width: 200%;
+        height: 200%;
+    }
+
+    button.clicked, .btn.clicked {
+        transform: scale(0.95);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+
+/* שדה התשלום */
+#card-element {
+    height: 50px;
+    border: 2px solid #4DA8DA;
+    border-radius: 10px;
+    font-size: 18px;
+}
+
+/* הודעות שגיאה */
+#card-errors {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* כפתור תשלום */
+#submit-payment {
+    border-radius: 30px;
+    font-size: 18px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease-in-out;
+}
+
+    #submit-payment:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+/* ספינר */
+#loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#loading-spinner p {
+    font-size: 16px;
     color: #4DA8DA;
-    border-color: #4DA8DA;
 }
 
-    .btn-outline-primary:hover {
-        background-color: #4DA8DA;
-        color: white;
+
+.star-rating .fa-star {
+    display: inline-block;
+    font-size: 2rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+/* עיצוב כוכבים לדירוג */
+.star-rating .fa-star {
+    font-size: 2rem;
+    margin-right: 8px;
+    cursor: pointer;
+    color: #ccc;
+    transition: color 0.3s ease-in-out;
+}
+
+    .star-rating .fa-star:hover,
+    .star-rating .fa-star.hovered,
+    .star-rating .fa-star.selected {
+        color: #FFD700;
+        transform: scale(1.1);
     }
 
-.table {
-    background-color: white;
+/* כפתור שליחה */
+button[type="submit"] {
+    border-radius: 30px;
+    padding: 12px 20px;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-.marquee {
-    background-color: #B0E0E6;
-    color: #00008B;
-}
+    button[type="submit"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    }

@@ -4,6 +4,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using static LibraryApp.Models.ConnectionToDBmodel;
+using Stripe.Terminal;
+using System.Data;
 
 namespace LibraryApp.Controllers
 {
@@ -199,7 +201,7 @@ namespace LibraryApp.Controllers
         public IActionResult ShowBooks(string searchQuery)
         {
             // בדיקה האם המשתמש מחובר
-            string userName = HttpContext.Session.GetString("Current user name");
+            string userName = HttpContext.Session.GetString("CurrentUser");
             if (string.IsNullOrEmpty(userName))
             {
                 TempData["ErrorMessage"] = "You must be logged in to view this page.";
@@ -365,12 +367,13 @@ namespace LibraryApp.Controllers
 
                 // שאילתה לשליפת הפידבקים לספר
                 string feedbackQuery = @"
-        SELECT UserName, Rating, Feedback AS Comment, FeedbackDate 
-        FROM BookFeedback 
-        WHERE BookTitle = @BookTitle 
-          AND Author = @Author 
-          AND Publisher = @Publisher 
-          AND YearOfPublication = @YearOfPublication";
+    SELECT UserName, Rating, Feedback AS Comment, FeedbackDate 
+FROM BookFeedback 
+WHERE RTRIM(LTRIM(BookTitle)) = RTRIM(LTRIM(@BookTitle))
+  AND RTRIM(LTRIM(Author)) = RTRIM(LTRIM(@Author))
+  AND RTRIM(LTRIM(Publisher)) = RTRIM(LTRIM(@Publisher))
+  AND YearOfPublication = @YearOfPublication;
+";
 
                 using (var feedbackCommand = new SqlCommand(feedbackQuery, connection))
                 {
@@ -385,19 +388,24 @@ namespace LibraryApp.Controllers
                         {
                             feedbacks.Add(new Feedback
                             {
-                                UserName = feedbackReader.GetString(0),
-                                Rating = feedbackReader.GetInt32(1),
-                                Comment = feedbackReader.GetString(2),
-                                FeedbackDate = feedbackReader.GetDateTime(3)
+                                UserName = feedbackReader.GetString(feedbackReader.GetOrdinal("UserName")),
+                                Rating = feedbackReader.GetInt32(feedbackReader.GetOrdinal("Rating")),
+                                Comment = feedbackReader.GetString(feedbackReader.GetOrdinal("Comment")),
+                                FeedbackDate = feedbackReader.GetDateTime(feedbackReader.GetOrdinal("FeedbackDate"))
                             });
                         }
                     }
                 }
             }
 
+          
+
             // העברת הספר והפידבקים ל-View
             ViewBag.Feedbacks = feedbacks;
-            return View(book);
+
+            
+
+            return View("BookDetails",book);
         }
 
 
@@ -592,7 +600,7 @@ namespace LibraryApp.Controllers
                     }
                     if (method.Contains("borrow"))
                     {
-                        methodConditions.Add("PriceForBorrow > 0 AND AvailableAmountOfCopiesToBorrow > 0");
+                        methodConditions.Add("PriceForBorrow > 0 AND AvailableAmountOfCopiesToBorrow > 0 AND BuyOnly = 0");
                     }
 
                     if (methodConditions.Count > 0)
