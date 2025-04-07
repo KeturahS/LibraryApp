@@ -6,6 +6,10 @@ using System.Collections.Generic;
 using static LibraryApp.Models.ConnectionToDBmodel;
 using Stripe.Terminal;
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using LibraryApp.Helpers;
+
 
 namespace LibraryApp.Controllers
 {
@@ -42,7 +46,7 @@ namespace LibraryApp.Controllers
                     return View("SignUp", user);
                 }
 
-
+                
                 using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
@@ -55,7 +59,9 @@ namespace LibraryApp.Controllers
                         command.Parameters.AddWithValue("@FirstName", user.FirstName);
                         command.Parameters.AddWithValue("@LastName", user.LastName);
                         command.Parameters.AddWithValue("@Email", user.email);
-                        command.Parameters.AddWithValue("@Password", user.Password);
+
+                        string hashedPassword = HashHelper.ComputeSha256Hash(user.Password);
+                        command.Parameters.AddWithValue("@Password", hashedPassword);
 
                         int rowsAffected = command.ExecuteNonQuery();
                         if (rowsAffected > 0)
@@ -117,11 +123,8 @@ namespace LibraryApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                string status = IsUserValid(model.email, model.Password);
-
-
-
-
+                string hashedPassword = HashHelper.ComputeSha256Hash(model.Password);
+                string status = IsUserValid(model.email, hashedPassword);
 
                 if (status == "NonExistent")
                 {
@@ -347,7 +350,7 @@ namespace LibraryApp.Controllers
 
 
 
-        private string IsUserValid(string email, string password)
+        private string IsUserValid(string email, string hashedPassword)
         {
             string query = "SELECT Status FROM Users_tbl WHERE email = @Email AND Password = @Password";
 
@@ -356,7 +359,7 @@ namespace LibraryApp.Controllers
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Email", email);
-                    command.Parameters.AddWithValue("@Password", password);
+                    command.Parameters.AddWithValue("@Password", hashedPassword);
 
                     connection.Open();
                     using (var reader = command.ExecuteReader())
@@ -1104,8 +1107,136 @@ WHERE RTRIM(LTRIM(BookTitle)) = RTRIM(LTRIM(@BookTitle))
             return View("feedbacksAboutUs"); 
         }
 
+        [HttpGet]
+        [HttpPost]
+        public IActionResult ForgotPassword(ForgotPasswordModel model)
+        {
+            if (!ModelState.IsValid) 
+                return View(model);
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                // ודא שהמייל קיים
+                string checkQuery = "SELECT COUNT(*) FROM Users_tbl WHERE email = @Email";
+                using (SqlCommand cmd = new SqlCommand(checkQuery, connection))
+                {
+                    cmd.Parameters.AddWithValue("@Email", model.Email);
+                    int count = (int)cmd.ExecuteScalar();
+                    if (count == 0)
+                    {
+                        TempData["ErrorMessage"] = "Email not found in our system.";
+                        return View(model);
+                    }
+                }
+
+                // צור טוקן
+                Guid token = Guid.NewGuid();
+                DateTime expiration = DateTime.Now.AddMinutes(30);
+
+                string insertToken = "INSERT INTO PasswordResetTokens (Email, Token, Expiration) VALUES (@Email, @Token, @Expiration)";
+                using (SqlCommand cmd = new SqlCommand(insertToken, connection))
+                {
+                    cmd.Parameters.AddWithValue("@Email", model.Email);
+                    cmd.Parameters.AddWithValue("@Token", token);
+                    cmd.Parameters.AddWithValue("@Expiration", expiration);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // שלח מייל עם קישור
+                string resetLink = Url.Action("ResetPassword", "HomePage", new { token = token }, Request.Scheme);
+
+                Gmail gmail = new Gmail
+                {
+                    To = model.Email,
+                    Subject = "Reset your password",
+                    Body = $"Click the link below to reset your password:\n\n{resetLink}\n\nThis link expires in 30 minutes."
+                };
+                gmail.SendEmail();
+
+                TempData["SuccessMessage"] = "A reset link was sent to your email.";
+                return RedirectToAction("SignIn");
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(Guid token)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string check = "SELECT Email FROM PasswordResetTokens WHERE Token = @Token AND Expiration > GETDATE()";
+                using (var command = new SqlCommand(check, connection))
+                {
+                    command.Parameters.AddWithValue("@Token", token);
+                    var email = command.ExecuteScalar() as string;
+
+                    if (string.IsNullOrEmpty(email))
+                    {
+                        TempData["ErrorMessage"] = "Invalid or expired token.";
+                        return RedirectToAction("SignIn");
+                    }
+
+                    return View(new ResetPasswordModel { Token = token.ToString() });
+                }
+            }
+        }
+
+        [HttpPost]
+        public IActionResult ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid) 
+                return View(model);
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string getEmail = "SELECT Email FROM PasswordResetTokens WHERE Token = @Token AND Expiration > GETDATE()";
+                string email;
+
+                using (var command = new SqlCommand(getEmail, connection))
+                {
+                    command.Parameters.AddWithValue("@Token", Guid.Parse(model.Token));
+                    email = command.ExecuteScalar() as string;
+                    if (string.IsNullOrEmpty(email))
+                    {
+                        TempData["ErrorMessage"] = "Token expired or invalid.";
+                        return RedirectToAction("SignIn");
+                    }
+                }
+
+
+                string hashedPassword = HashHelper.ComputeSha256Hash(model.Password);
+
+                string updateQuery = "UPDATE Users_tbl SET Password = @Password WHERE email = @Email";
+                using (var command = new SqlCommand(updateQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@Password", hashedPassword);
+                    command.Parameters.AddWithValue("@Email", email);
+                    command.ExecuteNonQuery();
+                }
+
+                string deleteToken = "DELETE FROM PasswordResetTokens WHERE Email = @Email";
+                using (var command = new SqlCommand(deleteToken, connection))
+                {
+                    command.Parameters.AddWithValue("@Email", email);
+                    command.ExecuteNonQuery();
+                }
+
+                TempData["SuccessMessage"] = "Password has been reset successfully.";
+                return RedirectToAction("SignIn");
+            }
+        }
+
 
 
 
     }
+
+
+
+
 }
